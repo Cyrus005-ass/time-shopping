@@ -8,16 +8,132 @@
   const CHRONO_PREFIX = `${PREFIX}chrono_`;
   const JOCKER_PREFIX = `${PREFIX}jocker_`;
 
+  const ADMIN_ACCOUNTS_KEY = `${PREFIX}admin_accounts`;
+  const ADMIN_SESSION_KEY = `${PREFIX}admin_session`;
+
+  const DEFAULT_ADMIN_ACCOUNTS = [
+    { email: 'admin@shoppingdate.local', password: 'admin2026', fullName: 'Administrateur Principal' },
+    { email: 'admin2@shoppingdate.local', password: 'admin2026a', fullName: 'Administrateur 2' }
+  ];
+
+  let localStorageBroken = false;
+  let sessionStorageBroken = false;
+
+  function readWindowNameStore() {
+    if (typeof window.name !== 'string' || !window.name.trim()) return {};
+    try {
+      const parsed = JSON.parse(window.name);
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+
+  function writeWindowNameStore(store) {
+    try {
+      window.name = JSON.stringify(store);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function readRaw(key) {
+    if (!localStorageBroken) {
+      try {
+        const value = localStorage.getItem(key);
+        if (value !== null) return value;
+      } catch {
+        localStorageBroken = true;
+      }
+    }
+
+    if (!sessionStorageBroken) {
+      try {
+        const value = sessionStorage.getItem(key);
+        if (value !== null) return value;
+      } catch {
+        sessionStorageBroken = true;
+      }
+    }
+
+    const windowNameStore = readWindowNameStore();
+    return Object.prototype.hasOwnProperty.call(windowNameStore, key)
+      ? windowNameStore[key]
+      : null;
+  }
+
+  function writeRaw(key, value) {
+    let wrote = false;
+
+    if (!localStorageBroken) {
+      try {
+        localStorage.setItem(key, value);
+        wrote = true;
+      } catch {
+        localStorageBroken = true;
+      }
+    }
+
+    if (!sessionStorageBroken) {
+      try {
+        sessionStorage.setItem(key, value);
+        wrote = true;
+      } catch {
+        sessionStorageBroken = true;
+      }
+    }
+
+    const windowNameStore = readWindowNameStore();
+    windowNameStore[key] = value;
+    wrote = writeWindowNameStore(windowNameStore) || wrote;
+
+    if (!wrote) {
+      throw new Error('Stockage navigateur indisponible.');
+    }
+  }
+
+  function removeRaw(key) {
+    if (!localStorageBroken) {
+      try {
+        localStorage.removeItem(key);
+      } catch {
+        localStorageBroken = true;
+      }
+    }
+
+    if (!sessionStorageBroken) {
+      try {
+        sessionStorage.removeItem(key);
+      } catch {
+        sessionStorageBroken = true;
+      }
+    }
+
+    const windowNameStore = readWindowNameStore();
+    if (Object.prototype.hasOwnProperty.call(windowNameStore, key)) {
+      delete windowNameStore[key];
+      writeWindowNameStore(windowNameStore);
+    }
+  }
+
   /* ── UTILS ──────────────────────────────────────────────── */
   function readJson(key) {
+    const raw = readRaw(key);
+    if (raw === null) return null;
     try {
-      const v = localStorage.getItem(key);
-      return v ? JSON.parse(v) : null;
-    } catch { return null; }
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
   }
 
   function writeJson(key, value) {
-    localStorage.setItem(key, JSON.stringify(value));
+    writeRaw(key, JSON.stringify(value));
+  }
+
+  function removeJson(key) {
+    removeRaw(key);
   }
 
   function readList(key) {
@@ -192,8 +308,8 @@
     const notifications = getNotifications().filter((notif) => notif.participantId !== participantId);
     writeJson(NOTIFICATIONS_KEY, notifications);
 
-    localStorage.removeItem(chronoKey(participantId));
-    localStorage.removeItem(jockerKey(participantId));
+    removeRaw(chronoKey(participantId));
+    removeRaw(jockerKey(participantId));
   }
 
   function deleteRegisteredParticipant(id) {
@@ -206,6 +322,31 @@
   }
   /* ── PAIRINGS ───────────────────────────────────────────── */
   function getPairings() { return readList(PAIRINGS_KEY); }
+  function getAdminAccounts() {
+    const saved = readList(ADMIN_ACCOUNTS_KEY);
+    if (saved.length) return saved;
+    writeJson(ADMIN_ACCOUNTS_KEY, DEFAULT_ADMIN_ACCOUNTS);
+    return [...DEFAULT_ADMIN_ACCOUNTS];
+  }
+
+  function saveAdminAccounts(list) {
+    writeJson(ADMIN_ACCOUNTS_KEY, list);
+    return list;
+  }
+
+  function getAdminSession() {
+    return readJson(ADMIN_SESSION_KEY);
+  }
+
+  function setAdminSession(session) {
+    writeJson(ADMIN_SESSION_KEY, session);
+    return session;
+  }
+
+  function clearAdminSession() {
+    removeRaw(ADMIN_SESSION_KEY);
+  }
+
   function savePairings(list) { writeJson(PAIRINGS_KEY, list); }
 
   function getPairingForParticipant(pid) {
@@ -410,7 +551,13 @@
   window.SDStorage = {
     getSession: () => readJson(SESSION_KEY),
     setSession: (s) => writeJson(SESSION_KEY, s),
-    clearSession: () => localStorage.removeItem(SESSION_KEY),
+    clearSession: () => removeRaw(SESSION_KEY),
+
+    getAdminAccounts,
+    saveAdminAccounts,
+    getAdminSession,
+    setAdminSession,
+    clearAdminSession,
 
     getAllParticipants,
     addRegisteredParticipant,

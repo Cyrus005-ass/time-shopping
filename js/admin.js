@@ -1,6 +1,11 @@
 (() => {
-  const adminSessionRaw = localStorage.getItem('sd_admin_session');
-  const adminSession = adminSessionRaw ? JSON.parse(adminSessionRaw) : null;
+  const storage = window.SDStorage;
+  if (!storage) {
+    window.location.replace('/pages/admin-login.html');
+    return;
+  }
+
+  const adminSession = storage.getAdminSession();
 
   if (!adminSession || adminSession.role !== 'admin') {
     window.location.replace('/pages/admin-login.html');
@@ -85,7 +90,7 @@
   }
 
   logoutButton?.addEventListener('click', () => {
-    localStorage.removeItem('sd_admin_session');
+    storage.clearAdminSession();
     window.location.replace('/pages/admin-login.html');
   });
 

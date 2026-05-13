@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
@@ -15,6 +15,7 @@
       padding: 24px;
       background: var(--bg);
     }
+
     .landing-card {
       max-width: 560px;
       background: var(--surface);
@@ -23,6 +24,7 @@
       padding: 48px 32px;
       box-shadow: var(--shadow-card);
     }
+
     .landing h1 {
       font-family: var(--f-head);
       font-size: clamp(28px, 6vw, 42px);
@@ -31,12 +33,29 @@
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
+
+    .season-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 28px;
+      text-decoration: none;
+      transition: transform .3s ease, box-shadow .3s ease, opacity .3s ease;
+    }
+
+    .season-link:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--glow-s);
+      opacity: .96;
+    }
+
     .welcome-text {
       font-size: 18px;
       line-height: 1.7;
       color: var(--text-2);
       margin-bottom: 32px;
     }
+
     .btn-start {
       display: inline-block;
       background: var(--g);
@@ -49,6 +68,7 @@
       margin-top: 16px;
       transition: all .3s;
     }
+
     .btn-start:hover {
       transform: translateY(-3px);
       box-shadow: var(--glow-s);
@@ -59,20 +79,20 @@
   <div class="landing">
     <div class="landing-card">
       <img src="/logo.png" alt="Shopping Date" class="brand-mark" style="width: 90px; height: 90px; margin-bottom: 24px;">
-      
+
       <h1>Shopping Date</h1>
-      <p class="auth-kicker">SAISON 1 • OFFICIEL</p>
-      
+      <a href="/pages/login.html" class="auth-kicker season-link" aria-label="Accéder à la saison 1">SAISON 1 • OFFICIEL</a>
+
       <div class="welcome-text">
         <strong>Félicitations !</strong><br><br>
-        Si vous êtes ici, c’est que vous avez été officiellement sélectionné(e) 
+        Si vous êtes ici, c’est que vous avez été officiellement sélectionné(e)
         pour participer à <strong>Shopping Date - Saison 1</strong>.<br><br>
-        
-        Veuillez suivre les instructions ci-dessous pour vous connecter.
+
+        Cliquez sur <strong>Saison 1</strong> pour accéder à votre espace candidat.
       </div>
 
       <a href="/pages/login.html" class="btn-start">
-        Accéder à mon espace candidat →
+        Accéder à la saison 1 →
       </a>
 
       <p style="margin-top: 40px; font-size: 14px; color: var(--text-3);">

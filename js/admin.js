@@ -1,5 +1,4 @@
 (() => {
-  // Vérification session admin
   const adminSessionRaw = localStorage.getItem('sd_admin_session');
   const adminSession = adminSessionRaw ? JSON.parse(adminSessionRaw) : null;
 
@@ -8,41 +7,72 @@
     return;
   }
 
-  // Sélection des éléments
-  const adminName         = document.querySelector('[data-admin-name]');
-  const logoutButton      = document.querySelector('[data-admin-logout]');
-  const adminForm         = document.querySelector('[data-admin-form]');
-  const pairForm          = document.querySelector('[data-pair-form]');
-  const riddleForm        = document.querySelector('[data-riddle-form]');
-  
-  const adminFeedback     = document.querySelector('[data-admin-feedback]');
-  const pairFeedback      = document.querySelector('[data-pair-feedback]');
-  const riddleFeedback    = document.querySelector('[data-riddle-feedback]');
+  const adminName = document.querySelector('[data-admin-name]');
+  const logoutButton = document.querySelector('[data-admin-logout]');
+  const adminForm = document.querySelector('[data-admin-form]');
+  const pairForm = document.querySelector('[data-pair-form]');
+  const riddleForm = document.querySelector('[data-riddle-form]');
 
-  const participantList   = document.querySelector('[data-participant-list]');
-  const pairingList       = document.querySelector('[data-pairing-list]');
-  const riddleList        = document.querySelector('[data-riddle-list]');
-  const notifList         = document.querySelector('[data-notification-list]');
-  const chronoList        = document.querySelector('[data-chrono-list]');
+  const adminFeedback = document.querySelector('[data-admin-feedback]');
+  const pairFeedback = document.querySelector('[data-pair-feedback]');
+  const riddleFeedback = document.querySelector('[data-riddle-feedback]');
+  const participantFeedback = document.querySelector('[data-participant-feedback]');
+
+  const participantList = document.querySelector('[data-participant-list]');
+  const pairingList = document.querySelector('[data-pairing-list]');
+  const riddleList = document.querySelector('[data-riddle-list]');
+  const notifList = document.querySelector('[data-notification-list]');
+  const chronoList = document.querySelector('[data-chrono-list]');
 
   const countParticipants = document.querySelector('[data-participant-count]');
-  const countPairings     = document.querySelector('[data-pairing-count]');
-  const countRiddles      = document.querySelector('[data-riddle-count]');
-  const countNotifs       = document.querySelector('[data-notification-count]');
+  const countPairings = document.querySelector('[data-pairing-count]');
+  const countRiddles = document.querySelector('[data-riddle-count]');
+  const countNotifs = document.querySelector('[data-notification-count]');
 
-  const selectA           = document.querySelector('[data-select-a]');
-  const selectB           = document.querySelector('[data-select-b]');
-  const riddleSelect      = document.querySelector('[data-riddle-target]');
+  const selectA = document.querySelector('[data-select-a]');
+  const selectB = document.querySelector('[data-select-b]');
+  const riddleSelect = document.querySelector('[data-riddle-target]');
 
   if (adminName) adminName.textContent = adminSession.fullName || adminSession.email;
 
-  // Déconnexion
-  logoutButton?.addEventListener('click', () => {
-    localStorage.removeItem('sd_admin_session');
-    window.location.replace('/pages/admin-login.html');
-  });
+  function fb(node, msg, state) {
+    if (!node) return;
+    node.textContent = msg;
+    node.dataset.state = state;
+    setTimeout(() => {
+      if (node) node.dataset.state = '';
+    }, 5000);
+  }
 
-  // Rafraîchissement automatique
+  function formatDate(value) {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? String(value || '—') : date.toLocaleString('fr-FR');
+  }
+
+  function formatTime(value) {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? '—' : date.toLocaleTimeString('fr-FR', {
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+  }
+
+  function esc(value) {
+    return String(value || '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function restoreSelectValue(select, value) {
+    if (!select) return;
+    const exists = Array.from(select.options).some((option) => option.value === value);
+    select.value = exists ? value : '';
+  }
+
   function refreshAll() {
     window.SDStorage.syncScheduledRiddles();
     renderStats();
@@ -54,22 +84,16 @@
     renderChronos();
   }
 
-  // Mise à jour toutes les 5 secondes + chrono toutes les secondes
-  setInterval(() => {
-    if (window.SDStorage.syncScheduledRiddles()) refreshAll();
-    else renderChronos();
-  }, 5000);
+  logoutButton?.addEventListener('click', () => {
+    localStorage.removeItem('sd_admin_session');
+    window.location.replace('/pages/admin-login.html');
+  });
 
-  setInterval(renderChronos, 1000);
-  window.addEventListener('storage', refreshAll);
-
-  // ==================== FORMULAIRES ====================
-
-  adminForm?.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const nom       = String(adminForm.elements.nom.value || '').trim();
-    const prenom    = String(adminForm.elements.prenom.value || '').trim();
-    const email     = window.SDStorage.normalizeEmail(adminForm.elements.email.value);
+  adminForm?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    const nom = String(adminForm.elements.nom.value || '').trim();
+    const prenom = String(adminForm.elements.prenom.value || '').trim();
+    const email = window.SDStorage.normalizeEmail(adminForm.elements.email.value);
     const telephone = String(adminForm.elements.telephone.value || '').trim();
 
     if (!nom || !prenom || !email || !telephone) {
@@ -82,7 +106,10 @@
 
     window.SDStorage.addRegisteredParticipant({
       id: `a-${Date.now().toString(36)}`,
-      nom, prenom, email, telephone,
+      nom,
+      prenom,
+      email,
+      telephone,
       sexe: 'non renseigné',
       source: 'admin',
       createdAt: new Date().toISOString()
@@ -93,31 +120,35 @@
     refreshAll();
   });
 
-  pairForm?.addEventListener('submit', (e) => {
-    e.preventDefault();
+  pairForm?.addEventListener('submit', (event) => {
+    event.preventDefault();
     const a = String(pairForm.elements.participant_a.value || '').trim();
     const b = String(pairForm.elements.participant_b.value || '').trim();
     const theme = String(pairForm.elements.theme.value || '').trim();
 
-    if (!a || !b || !theme) return fb(pairFeedback, 'Veuillez choisir deux participants et un thème.', 'error');
-    if (a === b) return fb(pairFeedback, 'Un binôme doit contenir deux personnes différentes.', 'error');
+    if (!a || !b || !theme) {
+      return fb(pairFeedback, 'Veuillez choisir deux participants et un thème.', 'error');
+    }
+    if (a === b) {
+      return fb(pairFeedback, 'Un binôme doit contenir deux personnes différentes.', 'error');
+    }
 
     try {
       window.SDStorage.createOrUpdatePairing([a, b], theme);
       pairForm.reset();
       fb(pairFeedback, 'Binôme créé et thème envoyé avec succès !', 'success');
       refreshAll();
-    } catch (err) {
-      fb(pairFeedback, err?.message || 'Erreur lors de la création.', 'error');
+    } catch (error) {
+      fb(pairFeedback, error?.message || 'Erreur lors de la création.', 'error');
     }
   });
 
-  riddleForm?.addEventListener('submit', (e) => {
-    e.preventDefault();
+  riddleForm?.addEventListener('submit', (event) => {
+    event.preventDefault();
     const participantId = String(riddleForm.elements.participant_id.value || '').trim();
-    const question      = String(riddleForm.elements.question.value || '').trim();
-    const answer        = String(riddleForm.elements.answer.value || '').trim();
-    const sendAt        = String(riddleForm.elements.send_at.value || '').trim();
+    const question = String(riddleForm.elements.question.value || '').trim();
+    const answer = String(riddleForm.elements.answer.value || '').trim();
+    const sendAt = String(riddleForm.elements.send_at.value || '').trim();
 
     if (!participantId || !question || !answer) {
       return fb(riddleFeedback, 'Tous les champs sont obligatoires.', 'error');
@@ -128,32 +159,120 @@
       riddleForm.reset();
       fb(riddleFeedback, sendAt ? 'Énigme programmée avec succès.' : 'Énigme envoyée immédiatement.', 'success');
       refreshAll();
-    } catch (err) {
-      fb(riddleFeedback, err?.message || 'Erreur.', 'error');
+    } catch (error) {
+      fb(riddleFeedback, error?.message || 'Erreur.', 'error');
     }
   });
 
-  // ==================== RENDU ====================
+  participantList?.addEventListener('click', (event) => {
+    const editButton = event.target.closest('[data-participant-edit]');
+    const deleteButton = event.target.closest('[data-participant-delete]');
+
+    if (editButton) {
+      handleParticipantEdit(editButton.dataset.participantEdit);
+    }
+
+    if (deleteButton) {
+      handleParticipantDelete(deleteButton.dataset.participantDelete);
+    }
+  });
+
+  function handleParticipantEdit(id) {
+    const participant = window.SDStorage.findParticipantById(id);
+    if (!participant) {
+      return fb(participantFeedback, 'Profil introuvable.', 'error');
+    }
+    if (participant.source !== 'admin') {
+      return fb(participantFeedback, 'Ce profil est en lecture seule.', 'error');
+    }
+
+    const nextNom = window.prompt('Nom', participant.nom || '');
+    if (nextNom === null) return;
+    const nextPrenom = window.prompt('Prénom', participant.prenom || '');
+    if (nextPrenom === null) return;
+    const nextEmail = window.prompt('Email', participant.email || '');
+    if (nextEmail === null) return;
+    const nextTelephone = window.prompt('Numéro de téléphone', participant.telephone || '');
+    if (nextTelephone === null) return;
+
+    const nom = String(nextNom).trim();
+    const prenom = String(nextPrenom).trim();
+    const email = window.SDStorage.normalizeEmail(nextEmail);
+    const telephone = String(nextTelephone).trim();
+
+    if (!nom || !prenom || !email || !telephone) {
+      return fb(participantFeedback, 'Tous les champs doivent être remplis.', 'error');
+    }
+
+    const existing = window.SDStorage.findParticipantByEmail(email);
+    if (existing && existing.id !== id) {
+      return fb(participantFeedback, 'Cet email existe déjà.', 'error');
+    }
+
+    window.SDStorage.updateRegisteredParticipant(id, {
+      nom,
+      prenom,
+      email,
+      telephone
+    });
+
+    fb(participantFeedback, 'Profil mis à jour.', 'success');
+    refreshAll();
+  }
+
+  function handleParticipantDelete(id) {
+    const participant = window.SDStorage.findParticipantById(id);
+    if (!participant) {
+      return fb(participantFeedback, 'Profil introuvable.', 'error');
+    }
+    if (participant.source !== 'admin') {
+      return fb(participantFeedback, 'Ce profil est en lecture seule.', 'error');
+    }
+
+    const confirmed = window.confirm(`Supprimer le profil ${window.SDStorage.participantFullName(participant)} ?`);
+    if (!confirmed) return;
+
+    const deleted = window.SDStorage.deleteRegisteredParticipant(id);
+    if (!deleted) {
+      return fb(participantFeedback, 'Impossible de supprimer ce profil.', 'error');
+    }
+
+    fb(participantFeedback, 'Profil supprimé.', 'success');
+    refreshAll();
+  }
 
   function renderStats() {
-    const c = window.SDStorage.getDashboardCounts();
-    if (countParticipants) countParticipants.textContent = `${c.participants} candidat${c.participants > 1 ? 's' : ''}`;
-    if (countPairings)     countPairings.textContent     = `${c.pairings} binôme${c.pairings > 1 ? 's' : ''}`;
-    if (countRiddles)      countRiddles.textContent      = `${c.riddles} énigme${c.riddles > 1 ? 's' : ''}`;
-    if (countNotifs)       countNotifs.textContent       = `${c.notifications} notif${c.notifications > 1 ? 's' : ''}`;
+    const counts = window.SDStorage.getDashboardCounts();
+    if (countParticipants) countParticipants.textContent = `${counts.participants} candidat${counts.participants > 1 ? 's' : ''}`;
+    if (countPairings) countPairings.textContent = `${counts.pairings} binôme${counts.pairings > 1 ? 's' : ''}`;
+    if (countRiddles) countRiddles.textContent = `${counts.riddles} énigme${counts.riddles > 1 ? 's' : ''}`;
+    if (countNotifs) countNotifs.textContent = `${counts.notifications} notif${counts.notifications > 1 ? 's' : ''}`;
   }
 
   function renderSelectors() {
     const participants = window.SDStorage.getAllParticipants();
-    const opts = participants.map(p => 
-      `<option value="${esc(p.id)}">${esc(p.prenom)} ${esc(p.nom)}</option>`
-    ).join('');
-
+    const options = participants.map((participant) => {
+      const label = window.SDStorage.participantFullName(participant) || participant.email || participant.id;
+      return `<option value="${esc(participant.id)}">${esc(label)}</option>`;
+    }).join('');
     const empty = '<option value="">— Choisir un candidat —</option>';
 
-    if (selectA) { selectA.innerHTML = empty + opts; }
-    if (selectB) { selectB.innerHTML = empty + opts; }
-    if (riddleSelect) { riddleSelect.innerHTML = empty + opts; }
+    const currentA = selectA?.value || '';
+    const currentB = selectB?.value || '';
+    const currentRiddle = riddleSelect?.value || '';
+
+    if (selectA) {
+      selectA.innerHTML = empty + options;
+      restoreSelectValue(selectA, currentA);
+    }
+    if (selectB) {
+      selectB.innerHTML = empty + options;
+      restoreSelectValue(selectB, currentB);
+    }
+    if (riddleSelect) {
+      riddleSelect.innerHTML = empty + options;
+      restoreSelectValue(riddleSelect, currentRiddle);
+    }
   }
 
   function renderChronos() {
@@ -165,9 +284,9 @@
       return;
     }
 
-    chronoList.innerHTML = participants.map(p => {
-      const state = window.SDStorage.completeChronoIfExpired(p.id);
-      const riddles = window.SDStorage.getRiddlesForParticipant(p.id);
+    chronoList.innerHTML = participants.map((participant) => {
+      const state = window.SDStorage.completeChronoIfExpired(participant.id);
+      const riddles = window.SDStorage.getRiddlesForParticipant(participant.id);
 
       let statusBadge = '<span class="chrono-badge idle">En attente</span>';
       let timeCell = '<span class="chrono-cell idle">—</span>';
@@ -190,16 +309,16 @@
         endCell = formatTime(state.endsAt);
       }
 
-      const dots = [0,1,2].map(slot => {
-        const r = riddles[slot];
-        if (!r) return '<span class="enigme-dot pending" title="Pas d’énigme"></span>';
-        if (r.status === 'solved') return '<span class="enigme-dot done" title="Résolue"></span>';
-        if (r.status === 'sent') return '<span class="enigme-dot active" title="En cours"></span>';
+      const dots = [0, 1, 2].map((slot) => {
+        const riddle = riddles[slot];
+        if (!riddle) return '<span class="enigme-dot pending" title="Pas d’énigme"></span>';
+        if (riddle.status === 'solved') return '<span class="enigme-dot done" title="Résolue"></span>';
+        if (riddle.status === 'sent') return '<span class="enigme-dot active" title="En cours"></span>';
         return '<span class="enigme-dot pending" title="Programmée"></span>';
       });
 
       return `<tr>
-        <td><strong>${esc(p.prenom)} ${esc(p.nom)}</strong></td>
+        <td><strong>${esc(participant.prenom)} ${esc(participant.nom)}</strong></td>
         <td>${statusBadge}</td>
         <td>${timeCell}</td>
         <td>${startCell}</td>
@@ -215,23 +334,23 @@
     if (!participantList) return;
     const list = window.SDStorage.getAllParticipants();
 
-    participantList.innerHTML = list.length ? list.map(p => {
-      const pwd = window.SDStorage.buildPasswordFromPhone(p.telephone) || '—';
-      const sourceLabel = p.source === 'admin'
+    participantList.innerHTML = list.length ? list.map((participant) => {
+      const pwd = window.SDStorage.buildPasswordFromPhone(participant.telephone) || '—';
+      const sourceLabel = participant.source === 'admin'
         ? 'Admin'
-        : p.source === 'manuel'
+        : participant.source === 'manuel'
           ? 'Base'
-          : p.source || 'Local';
-      const actions = p.source === 'admin'
-        ? `<button class="mini-button" data-participant-edit="${esc(p.id)}">Modifier</button>
-           <button class="mini-button danger" data-participant-delete="${esc(p.id)}">Supprimer</button>`
+          : participant.source || 'Local';
+      const actions = participant.source === 'admin'
+        ? `<button type="button" class="mini-button" data-participant-edit="${esc(participant.id)}">Modifier</button>
+           <button type="button" class="mini-button danger" data-participant-delete="${esc(participant.id)}">Supprimer</button>`
         : '<span class="status-chip pending">Lecture seule</span>';
 
       return `<tr>
-        <td>${esc(p.nom)}</td>
-        <td>${esc(p.prenom)}</td>
-        <td>${esc(p.email)}</td>
-        <td>${esc(p.telephone)}</td>
+        <td>${esc(participant.nom)}</td>
+        <td>${esc(participant.prenom)}</td>
+        <td>${esc(participant.email)}</td>
+        <td>${esc(participant.telephone)}</td>
         <td>${esc(sourceLabel)}</td>
         <td class="admin-password">${esc(pwd)}</td>
         <td>${actions}</td>
@@ -243,14 +362,14 @@
     if (!pairingList) return;
     const list = window.SDStorage.getActivePairings();
 
-    pairingList.innerHTML = list.length ? list.map(pair => {
-      const a = window.SDStorage.participantFullName(window.SDStorage.findParticipantById(pair.participantIds[0]));
-      const b = window.SDStorage.participantFullName(window.SDStorage.findParticipantById(pair.participantIds[1]));
+    pairingList.innerHTML = list.length ? list.map((pairing) => {
+      const a = window.SDStorage.participantFullName(window.SDStorage.findParticipantById(pairing.participantIds[0]));
+      const b = window.SDStorage.participantFullName(window.SDStorage.findParticipantById(pairing.participantIds[1]));
       return `<tr>
         <td>${esc(a)}</td>
         <td>${esc(b)}</td>
-        <td>${esc(pair.theme)}</td>
-        <td>${formatDate(pair.sentAt || pair.createdAt)}</td>
+        <td>${esc(pairing.theme)}</td>
+        <td>${formatDate(pairing.sentAt || pairing.createdAt)}</td>
       </tr>`;
     }).join('') : '<tr><td colspan="4" class="admin-empty">Aucun binôme actif.</td></tr>';
   }
@@ -259,18 +378,18 @@
     if (!riddleList) return;
     const list = window.SDStorage.getRiddles();
 
-    riddleList.innerHTML = list.length ? list.map(r => {
-      const p = window.SDStorage.findParticipantById(r.participantId);
-      const last = r.responses?.[0] || null;
+    riddleList.innerHTML = list.length ? list.map((riddle) => {
+      const participant = window.SDStorage.findParticipantById(riddle.participantId);
+      const last = riddle.responses?.[0] || null;
       const result = last ? (last.isCorrect ? '✅ Correct' : '❌ Faux') : '—';
 
       return `<tr>
-        <td>${esc(window.SDStorage.participantFullName(p))}</td>
-        <td>${esc(r.question)}</td>
-        <td><span class="status-chip ${r.status}">${r.status}</span></td>
+        <td>${esc(window.SDStorage.participantFullName(participant))}</td>
+        <td>${esc(riddle.question)}</td>
+        <td><span class="status-chip ${riddle.status}">${riddle.status}</span></td>
         <td>${esc(last ? last.text : '—')}</td>
         <td>${result}</td>
-        <td>${last ? Math.round(last.durationMs/1000) + 's' : '—'}</td>
+        <td>${last ? Math.round(last.durationMs / 1000) + 's' : '—'}</td>
       </tr>`;
     }).join('') : '<tr><td colspan="6" class="admin-empty">Aucune énigme.</td></tr>';
   }
@@ -279,49 +398,25 @@
     if (!notifList) return;
     const list = window.SDStorage.getNotifications({ scope: 'admin' });
 
-    notifList.innerHTML = list.length ? list.map(n => {
-      const target = n.participantId 
-        ? window.SDStorage.participantFullName(window.SDStorage.findParticipantById(n.participantId))
+    notifList.innerHTML = list.length ? list.map((notification) => {
+      const target = notification.participantId
+        ? window.SDStorage.participantFullName(window.SDStorage.findParticipantById(notification.participantId))
         : 'Admin';
       return `<tr>
-        <td>${esc(n.title)}</td>
+        <td>${esc(notification.title)}</td>
         <td>${esc(target)}</td>
-        <td>${esc(n.message)}</td>
-        <td>${formatDate(n.createdAt)}</td>
+        <td>${esc(notification.message)}</td>
+        <td>${formatDate(notification.createdAt)}</td>
       </tr>`;
     }).join('') : '<tr><td colspan="4" class="admin-empty">Aucune notification.</td></tr>';
   }
 
-  // ==================== HELPERS ====================
+  window.addEventListener('storage', refreshAll);
 
-  function fb(node, msg, state) {
-    if (!node) return;
-    node.textContent = msg;
-    node.dataset.state = state;
-    setTimeout(() => { if (node) node.dataset.state = ''; }, 5000);
-  }
-
-  function formatDate(v) {
-    const d = new Date(v);
-    return isNaN(d.getTime()) ? String(v || '') : d.toLocaleString('fr-FR');
-  }
-
-  function formatTime(v) {
-    const d = new Date(v);
-    return isNaN(d.getTime()) ? '—' : d.toLocaleTimeString('fr-FR', { 
-      hour: '2-digit', minute: '2-digit', second: '2-digit' 
-    });
-  }
-
-  function esc(v) {
-    return String(v || '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
-
-  // Initialisation
   refreshAll();
+  setInterval(() => {
+    if (window.SDStorage.syncScheduledRiddles()) refreshAll();
+    else renderChronos();
+  }, 5000);
+  setInterval(renderChronos, 1000);
 })();

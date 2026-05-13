@@ -182,12 +182,28 @@
     return list[idx];
   }
 
-  function deleteRegisteredParticipant(id) {
-    const list = getRegisteredParticipants().filter(p => p.id !== id);
-    saveRegisteredParticipants(list);
-    return true;
+  function cleanupParticipantArtifacts(participantId) {
+    const pairings = getPairings().filter((pair) => !pair.participantIds.includes(participantId));
+    savePairings(pairings);
+
+    const riddles = getRiddles().filter((riddle) => riddle.participantId !== participantId);
+    saveRiddles(riddles);
+
+    const notifications = getNotifications().filter((notif) => notif.participantId !== participantId);
+    writeJson(NOTIFICATIONS_KEY, notifications);
+
+    localStorage.removeItem(chronoKey(participantId));
+    localStorage.removeItem(jockerKey(participantId));
   }
 
+  function deleteRegisteredParticipant(id) {
+    const list = getRegisteredParticipants();
+    const next = list.filter((p) => p.id !== id);
+    if (next.length === list.length) return false;
+    saveRegisteredParticipants(next);
+    cleanupParticipantArtifacts(id);
+    return true;
+  }
   /* ── PAIRINGS ───────────────────────────────────────────── */
   function getPairings() { return readList(PAIRINGS_KEY); }
   function savePairings(list) { writeJson(PAIRINGS_KEY, list); }
@@ -306,8 +322,12 @@
 
   function answerRiddle(riddleId, participantId, responseText) {
     const list = getRiddles();
-    const riddle = list.find(r => r.id === riddleId && r.participantId === participantId);
+    const riddle = list.find((r) => r.id === riddleId && r.participantId === participantId);
     if (!riddle) throw new Error('Énigme introuvable.');
+    if (riddle.status === 'solved') throw new Error('Cette énigme est déjà résolue.');
+    if (riddle.status === 'scheduled' && riddle.sendAt && new Date(riddle.sendAt).getTime() > Date.now()) {
+      throw new Error('Cette énigme n\'est pas encore disponible.');
+    }
 
     const respondedAt = nowIso();
     const isCorrect = normalizeText(riddle.answer) === normalizeText(responseText);
@@ -325,16 +345,39 @@
     riddle.responses.unshift(attempt);
     riddle.lastResponseAt = respondedAt;
     riddle.lastResponseIsCorrect = isCorrect;
+    riddle.lastResponseText = attempt.text;
 
     if (isCorrect) {
       riddle.status = 'solved';
       riddle.solvedAt = respondedAt;
+    } else if (riddle.status !== 'sent') {
+      riddle.status = 'sent';
     }
 
     saveRiddles(list);
-    return { isCorrect, message: isCorrect ? 'Bonne réponse !' : 'Réponse incorrecte.' };
-  }
 
+    const participant = findParticipantById(participantId);
+    const participantName = participantFullName(participant);
+    const summary = `${participantName} a répondu : "${attempt.text || 'Réponse vide'}"`;
+
+    addNotification({
+      scope: 'admin',
+      participantId,
+      type: 'riddle_answered',
+      title: isCorrect ? 'Bonne réponse reçue' : 'Réponse reçue',
+      message: isCorrect ? `${summary} et la réponse est correcte.` : `${summary}.`
+    });
+
+    addNotification({
+      scope: 'participant',
+      participantId,
+      type: 'riddle_answered',
+      title: isCorrect ? 'Bonne réponse !' : 'Réponse envoyée',
+      message: isCorrect ? 'Ta réponse est correcte. Bravo !' : 'Ta réponse a bien été enregistrée.'
+    });
+
+    return { isCorrect, message: isCorrect ? 'Bonne réponse !' : 'Réponse enregistrée.' };
+  }
   /* ── NOTIFICATIONS ─────────────────────────────────────── */
   function getNotifications(options = {}) {
     const { scope, participantId } = options;

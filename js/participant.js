@@ -23,6 +23,7 @@
   const progressBar = document.querySelector('[data-chrono-progress]');
   const themeList = document.querySelector('[data-theme-list]');
   const riddleList = document.querySelector('[data-riddle-list]');
+  const riddleFeedback = document.querySelector('[data-riddle-feedback]');
   const notificationList = document.querySelector('[data-notification-list]');
 
   function escapeHtml(value) {
@@ -213,28 +214,44 @@
 
     riddleList.innerHTML = riddles.map((riddle, index) => {
       const lastResponse = riddle.responses?.[0] || null;
-      const slotLabel = `H+${index}`;
-      const statusClass = ['sent', 'scheduled', 'solved'].includes(riddle.status) ? riddle.status : 'pending';
+      const statusClass = riddle.status === 'solved'
+        ? 'solved'
+        : riddle.status === 'sent'
+          ? 'sent'
+          : 'scheduled';
       const statusLabel = riddle.status === 'solved'
         ? 'Résolue'
         : riddle.status === 'sent'
           ? 'En cours'
           : 'Programmée';
-      const metaText = lastResponse
-        ? `${lastResponse.isCorrect ? 'Bonne' : 'Mauvaise'} réponse - ${Math.round(lastResponse.durationMs / 1000)}s`
-        : riddle.sentAt
-          ? `Envoyée le ${formatDateTime(riddle.sentAt)}`
-          : `Créée le ${formatDateTime(riddle.createdAt)}`;
+      const availabilityLabel = riddle.status === 'scheduled'
+        ? `Disponible le ${formatDateTime(riddle.sendAt || riddle.createdAt)}`
+        : `Envoyée le ${formatDateTime(riddle.sentAt || riddle.createdAt)}`;
+      const responseLabel = lastResponse
+        ? `${lastResponse.isCorrect ? 'Bonne' : 'Mauvaise'} réponse le ${formatDateTime(lastResponse.respondedAt)}`
+        : 'Aucune réponse envoyée.';
+      const answerBlock = riddle.status === 'solved'
+        ? `<div class="section-note success">Énigme résolue${lastResponse?.text ? ` avec : ${escapeHtml(lastResponse.text)}` : ''}.</div>`
+        : riddle.status === 'sent'
+          ? `<form class="riddle-answer-form" data-riddle-answer-form data-riddle-id="${escapeHtml(riddle.id)}">
+              <label class="field">
+                <span>Ta réponse</span>
+                <input type="text" name="response" maxlength="200" autocomplete="off" required placeholder="Écris ta réponse">
+              </label>
+              <button type="submit" class="auth-button">Envoyer la réponse</button>
+            </form>`
+          : '<div class="section-note">Cette énigme sera disponible dès son envoi programmé.</div>';
 
       return `
         <article class="section-card">
           <div class="section-card-head">
-            <span class="status-pill ${statusClass}">${slotLabel}</span>
+            <span class="status-pill ${statusClass}">H+${index}</span>
             <span class="status-pill ${statusClass}">${statusLabel}</span>
           </div>
           <h3>${escapeHtml(riddle.question)}</h3>
-          <p>${lastResponse ? `Dernière réponse : ${escapeHtml(lastResponse.text)}` : 'Aucune réponse envoyée.'}</p>
-          <div class="meta">${escapeHtml(metaText)}</div>
+          <p>${escapeHtml(responseLabel)}</p>
+          <div class="meta">${escapeHtml(availabilityLabel)}</div>
+          ${answerBlock}
         </article>`;
     }).join('');
   }
@@ -263,14 +280,22 @@
     }).join('');
   }
 
-  function renderAll() {
-    window.SDStorage.syncScheduledRiddles();
+  function renderStaticContent() {
     renderHeader();
-    renderJocker();
-    renderChrono();
     renderTheme();
     renderRiddles();
     renderNotifications();
+  }
+
+  function renderDynamicContent() {
+    renderJocker();
+    renderChrono();
+  }
+
+  function refreshAll() {
+    window.SDStorage.syncScheduledRiddles();
+    renderStaticContent();
+    renderDynamicContent();
   }
 
   logoutButton?.addEventListener('click', () => {
@@ -281,7 +306,7 @@
   jockerButton?.addEventListener('click', () => {
     try {
       window.SDStorage.activateJocker(participantId);
-      renderAll();
+      renderDynamicContent();
     } catch (error) {
       setStatus(jockerStatus, error?.message || 'Impossible d’activer le jocker.', 'error');
     }
@@ -290,14 +315,51 @@
   chronoButton?.addEventListener('click', () => {
     try {
       window.SDStorage.startParticipantChrono(participantId, defaultDurationHours);
-      renderAll();
+      renderDynamicContent();
     } catch (error) {
       setStatus(chronoStatus, error?.message || 'Impossible de lancer le chrono.', 'error');
     }
   });
 
-  window.addEventListener('storage', renderAll);
+  riddleList?.addEventListener('submit', (event) => {
+    const form = event.target.closest('[data-riddle-answer-form]');
+    if (!form) return;
 
-  renderAll();
-  setInterval(renderAll, 1000);
+    event.preventDefault();
+    const riddleId = String(form.dataset.riddleId || '').trim();
+    const responseInput = form.elements.response;
+    const responseText = String(responseInput?.value || '').trim();
+
+    if (!responseText) {
+      setStatus(riddleFeedback, 'Écris une réponse avant de l’envoyer.', 'error');
+      responseInput?.focus();
+      return;
+    }
+
+    try {
+      const result = window.SDStorage.answerRiddle(riddleId, participantId, responseText);
+      setStatus(riddleFeedback, result.message, result.isCorrect ? 'success' : 'warning');
+      renderStaticContent();
+      renderDynamicContent();
+
+      if (!result.isCorrect) {
+        const reopenedForm = riddleList.querySelector(`[data-riddle-answer-form][data-riddle-id="${riddleId}"]`);
+        if (reopenedForm?.elements?.response) {
+          reopenedForm.elements.response.value = responseText;
+          reopenedForm.elements.response.focus();
+        }
+      }
+    } catch (error) {
+      setStatus(riddleFeedback, error?.message || 'Impossible d’envoyer la réponse.', 'error');
+    }
+  });
+
+  window.addEventListener('storage', refreshAll);
+
+  refreshAll();
+  setInterval(() => {
+    const changed = window.SDStorage.syncScheduledRiddles();
+    if (changed) renderStaticContent();
+    renderDynamicContent();
+  }, 1000);
 })();

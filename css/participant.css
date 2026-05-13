@@ -283,3 +283,45 @@
     grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
   }
 }
+.riddle-answer-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.riddle-answer-form .auth-button {
+  width: 100%;
+}
+
+.section-note {
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-3);
+  line-height: 1.55;
+}
+
+.section-note.success {
+  border-color: rgba(74, 222, 128, 0.25);
+  color: #4ade80;
+  background: rgba(74, 222, 128, 0.08);
+}
+
+.section-note.warning {
+  border-color: rgba(250, 204, 21, 0.25);
+  color: #facc15;
+  background: rgba(250, 204, 21, 0.08);
+}
+
+.section-note.error {
+  border-color: rgba(255, 92, 92, 0.25);
+  color: #ff5c5c;
+  background: rgba(255, 92, 92, 0.08);
+}
+
+@media (max-width: 640px) {
+  .riddle-answer-form .auth-button {
+    font-size: 15px;
+  }
+}

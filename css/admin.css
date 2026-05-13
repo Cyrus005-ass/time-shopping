@@ -401,3 +401,37 @@ body::before {
     min-width: 680px;
   }
 }
+
+@media (max-width: 560px) {
+  .dashboard-shell {
+    width: min(100%, calc(100% - 14px));
+    padding-top: 14px;
+  }
+
+  .hero-card,
+  .panel {
+    padding: 16px;
+  }
+
+  .admin-hero h1 {
+    font-size: clamp(30px, 9vw, 42px);
+  }
+
+  .panel h2 {
+    font-size: 18px;
+  }
+
+  .data-table {
+    min-width: 620px;
+  }
+
+  .data-table th,
+  .data-table td {
+    padding: 12px 10px;
+  }
+
+  .mini-button {
+    margin-right: 6px;
+    padding: 7px 10px;
+  }
+}

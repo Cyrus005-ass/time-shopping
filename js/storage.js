@@ -212,7 +212,7 @@
       });
     }
 
-    return setChronoState(participantId, {
+    const state = setChronoState(participantId, {
       participantId,
       startedAt,
       endsAt,
@@ -220,6 +220,9 @@
       durationHours: effectiveDuration,
       jockerUsed: Boolean(jocker?.active)
     });
+
+    releaseFirstPendingRiddle(participantId, startedAt);
+    return state;
   }
 
   function activateJocker(participantId) {
@@ -398,17 +401,65 @@
   function getRiddles() { return readList(RIDDLES_KEY); }
   function saveRiddles(list) { writeJson(RIDDLES_KEY, list); }
 
+  function sortRiddlesForTimeline(list) {
+    return [...list].sort((a, b) => {
+      const aSlot = Number.isFinite(Number(a.slotIndex)) ? Number(a.slotIndex) : null;
+      const bSlot = Number.isFinite(Number(b.slotIndex)) ? Number(b.slotIndex) : null;
+
+      if (aSlot !== null || bSlot !== null) {
+        if (aSlot === null) return 1;
+        if (bSlot === null) return -1;
+        if (aSlot !== bSlot) return aSlot - bSlot;
+      }
+
+      const aTime = new Date(a.createdAt || a.sentAt || 0).getTime();
+      const bTime = new Date(b.createdAt || b.sentAt || 0).getTime();
+      if (aTime !== bTime) return aTime - bTime;
+      return String(a.id || '').localeCompare(String(b.id || ''));
+    });
+  }
+
   function getRiddlesForParticipant(pid) {
-    return getRiddles().filter(r => r.participantId === pid);
+    return sortRiddlesForTimeline(getRiddles().filter(r => r.participantId === pid));
+  }
+
+  function releaseFirstPendingRiddle(participantId, releasedAt = nowIso()) {
+    const list = getRiddles();
+    const ordered = sortRiddlesForTimeline(list.filter((riddle) => riddle.participantId === participantId));
+    const target = ordered[0];
+
+    if (!target || target.status === 'sent' || target.status === 'solved') return null;
+
+    const index = list.findIndex((riddle) => riddle.id === target.id);
+    if (index === -1) return null;
+
+    const updated = {
+      ...list[index],
+      status: 'sent',
+      sentAt: releasedAt,
+      sendAt: null
+    };
+
+    list[index] = updated;
+    saveRiddles(list);
+    addRiddleDeliveryNotifications(updated);
+    return updated;
   }
 
   function createRiddle(payload) {
     const { participantId, question, answer, sendAt } = payload || {};
     if (!participantId || !question || !answer) throw new Error('Champs obligatoires manquants.');
+    const slotIndex = getRiddles()
+      .filter((riddle) => riddle.participantId === participantId)
+      .reduce((max, riddle) => {
+        const value = Number(riddle.slotIndex);
+        return Number.isFinite(value) ? Math.max(max, value) : max;
+      }, -1) + 1;
 
     const sentTime = sendAt && new Date(sendAt).getTime() > Date.now() ? null : nowIso();
 
     const riddle = {
+      slotIndex,
       id: uid('riddle'),
       participantId,
       question: String(question).trim(),
@@ -467,7 +518,7 @@
     if (!riddle) throw new Error('Énigme introuvable.');
     if (riddle.status === 'solved') throw new Error('Cette énigme est déjà résolue.');
     if (riddle.status === 'scheduled' && riddle.sendAt && new Date(riddle.sendAt).getTime() > Date.now()) {
-      throw new Error('Cette énigme n\'est pas encore disponible.');
+      throw new Error("Cette énigme n'est pas encore disponible.");
     }
 
     const respondedAt = nowIso();
@@ -500,26 +551,29 @@
     const participant = findParticipantById(participantId);
     const participantName = participantFullName(participant);
     const summary = `${participantName} a répondu : "${attempt.text || 'Réponse vide'}"`;
+    const participantMessage = isCorrect
+      ? 'Ta réponse est correcte. Bravo !'
+      : 'Ta réponse est fausse. Réessaie.';
 
     addNotification({
       scope: 'admin',
       participantId,
       type: 'riddle_answered',
-      title: isCorrect ? 'Bonne réponse reçue' : 'Réponse reçue',
-      message: isCorrect ? `${summary} et la réponse est correcte.` : `${summary}.`
+      title: isCorrect ? 'Bonne réponse reçue' : 'Mauvaise réponse reçue',
+      message: isCorrect ? `${summary} et la réponse est correcte.` : `${summary} mais la réponse est incorrecte.`
     });
 
     addNotification({
       scope: 'participant',
       participantId,
       type: 'riddle_answered',
-      title: isCorrect ? 'Bonne réponse !' : 'Réponse envoyée',
-      message: isCorrect ? 'Ta réponse est correcte. Bravo !' : 'Ta réponse a bien été enregistrée.'
+      title: isCorrect ? 'Bonne réponse !' : 'Mauvaise réponse',
+      message: participantMessage
     });
 
-    return { isCorrect, message: isCorrect ? 'Bonne réponse !' : 'Réponse enregistrée.' };
+    return { isCorrect, message: isCorrect ? 'Bonne réponse !' : 'Mauvaise réponse. Réessaie.' };
   }
-  /* ── NOTIFICATIONS ─────────────────────────────────────── */
+
   function getNotifications(options = {}) {
     const { scope, participantId } = options;
     return readList(NOTIFICATIONS_KEY).filter(n => {

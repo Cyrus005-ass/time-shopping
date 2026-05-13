@@ -311,7 +311,7 @@
   chronoButton?.addEventListener('click', () => {
     try {
       window.SDStorage.startParticipantChrono(participantId, defaultDurationHours);
-      renderDynamicContent();
+      refreshAll();
     } catch (error) {
       setStatus(chronoStatus, error?.message || 'Impossible de lancer le chrono.', 'error');
     }
@@ -334,7 +334,7 @@
 
     try {
       const result = window.SDStorage.answerRiddle(riddleId, participantId, responseText);
-      setStatus(riddleFeedback, result.message, result.isCorrect ? 'success' : 'warning');
+      setStatus(riddleFeedback, result.message, result.isCorrect ? 'success' : 'error');
       renderStaticContent();
       renderDynamicContent();
 

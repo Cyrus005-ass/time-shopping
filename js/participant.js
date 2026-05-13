@@ -187,18 +187,14 @@
       return;
     }
 
-    const otherId = pairing.participantIds.find((id) => id !== participantId);
-    const other = window.SDStorage.findParticipantById(otherId);
-    const partnerName = other ? window.SDStorage.participantFullName(other) : 'Partenaire inconnu';
-
     themeList.innerHTML = `
       <article class="section-card">
         <div class="section-card-head">
           <span class="status-pill sent">Thème actif</span>
-          <span class="status-pill pending">Binôme</span>
+          <span class="status-pill pending">Binôme confidentiel</span>
         </div>
         <h3>${escapeHtml(pairing.theme || 'Thème en attente')}</h3>
-        <p>${escapeHtml(partnerName)}</p>
+        <p>Ton binôme est attribué. L'identité de l'autre participant reste masquée sur cet espace.</p>
         <div class="meta">Envoyé le ${formatDateTime(pairing.sentAt || pairing.createdAt)}</div>
       </article>`;
   }

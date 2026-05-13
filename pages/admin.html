@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shopping Date - Admin Dashboard</title>
+  <link rel="stylesheet" href="/css/variables.css">
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body>
+  <div class="dashboard-shell">
+    <div class="hero-card">
+      <div class="admin-hero">
+        <div>
+          <h1>Dashboard Production</h1>
+          <p>Connecté en tant que <strong data-admin-name></strong></p>
+        </div>
+        <button class="auth-button outline" data-admin-logout>Déconnexion</button>
+      </div>
+    </div>
+
+    <div class="dashboard-grid">
+      <!-- Suivi Chronos -->
+      <div class="panel panel-wide">
+        <h2>⏱️ Suivi des Chronos</h2>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Participant</th>
+                <th>Statut</th>
+                <th>Temps restant</th>
+                <th>Démarré à</th>
+                <th>Fin prévue</th>
+                <th>H+0</th>
+                <th>H+1</th>
+                <th>H+2</th>
+              </tr>
+            </thead>
+            <tbody data-chrono-list></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Créer un profil -->
+      <div class="panel">
+        <h2>➕ Créer un profil</h2>
+        <form data-admin-form class="stack-form">
+          <div class="field"><span>Nom</span><input type="text" name="nom" required></div>
+          <div class="field"><span>Prénom</span><input type="text" name="prenom" required></div>
+          <div class="field"><span>Email</span><input type="email" name="email" required></div>
+          <div class="field"><span>Numéro de téléphone</span><input type="tel" name="telephone" required></div>
+          <button type="submit" class="auth-button">Créer le compte</button>
+        </form>
+        <div class="auth-feedback" data-admin-feedback></div>
+      </div>
+
+      <!-- Créer un binôme -->
+      <div class="panel">
+        <h2>🔗 Lier un binôme</h2>
+        <form data-pair-form class="stack-form">
+          <div class="field">
+            <span>Participant A</span>
+            <select data-select-a name="participant_a" required></select>
+          </div>
+          <div class="field">
+            <span>Participant B</span>
+            <select data-select-b name="participant_b" required></select>
+          </div>
+          <div class="field">
+            <span>Thème du binôme</span>
+            <input type="text" name="theme" required placeholder="Ex: Soirée romantique">
+          </div>
+          <button type="submit" class="auth-button">Envoyer le thème</button>
+        </form>
+        <div class="auth-feedback" data-pair-feedback></div>
+      </div>
+
+      <!-- Envoyer une énigme -->
+      <div class="panel">
+        <h2>🧩 Envoyer une énigme</h2>
+        <form data-riddle-form class="stack-form">
+          <div class="field">
+            <span>Destinataire</span>
+            <select data-riddle-target name="participant_id" required></select>
+          </div>
+          <div class="field">
+            <span>Question / Énigme</span>
+            <input type="text" name="question" required>
+          </div>
+          <div class="field">
+            <span>Réponse attendue</span>
+            <input type="text" name="answer" required>
+          </div>
+          <div class="field">
+            <span>Programmer l'envoi (optionnel)</span>
+            <input type="datetime-local" name="send_at">
+          </div>
+          <button type="submit" class="auth-button">Enregistrer l'énigme</button>
+        </form>
+        <div class="auth-feedback" data-riddle-feedback></div>
+      </div>
+
+      <!-- Liste des participants -->
+      <div class="panel panel-wide">
+        <h2>👥 Profils Candidats</h2>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Nom</th><th>Prénom</th><th>Email</th><th>Téléphone</th><th>Source</th><th>Mot de passe</th><th>Actions</th>
+              </tr>
+            </thead>
+            <tbody data-participant-list></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Binômes actifs -->
+      <div class="panel panel-wide">
+        <h2>🔗 Binômes Actifs</h2>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Participant A</th><th>Participant B</th><th>Thème</th><th>Date</th></tr></thead>
+            <tbody data-pairing-list></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Énigmes -->
+      <div class="panel panel-wide">
+        <h2>🧩 Énigmes envoyées</h2>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Profil</th><th>Question</th><th>Statut</th><th>Dernière réponse</th><th>Résultat</th><th>Temps</th></tr></thead>
+            <tbody data-riddle-list></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Notifications -->
+      <div class="panel panel-wide">
+        <h2>🛎️ Notifications</h2>
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead><tr><th>Titre</th><th>Participant</th><th>Message</th><th>Date</th></tr></thead>
+            <tbody data-notification-list></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="/data/participants.js"></script>
+  <script src="/js/storage.js"></script>
+  <script src="/js/chrono.js"></script>
+  <script src="/js/enigme.js"></script>
+  <script src="/js/admin.js"></script>
+</body>
+</html>

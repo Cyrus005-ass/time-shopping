@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Shopping Date — Admin</title>
+  <link rel="stylesheet" href="/css/variables.css">
+  <link rel="stylesheet" href="/css/global.css">
+</head>
+<body>
+  <main class="auth-layout">
+    <section class="auth-card">
+      <div class="brand-block compact">
+        <img class="brand-mark" src="/logo.png" alt="Shopping Date">
+        <p class="auth-kicker">Shopping Date — Admin</p>
+      </div>
+      <h1>Connexion admin</h1>
+      <p class="auth-copy">Acc?s r?serv? ? l'?quipe de production.</p>
+      <form class="auth-form" data-admin-login-form novalidate>
+        <label class="field"><span>Email admin</span><input type="email" name="email" autocomplete="username" required placeholder="email@shoppingdate.com"></label>
+        <label class="field"><span>Mot de passe</span><input type="password" name="password" autocomplete="current-password" required placeholder="????????"></label>
+        <button class="auth-button" type="submit">Se connecter</button>
+        <p class="auth-feedback" data-feedback aria-live="polite"></p>
+      </form>
+      <p class="auth-hint"><a href="/pages/login.html">? Connexion candidat</a></p>
+    </section>
+  </main>
+
+  <script src="/js/admin-auth.js" defer></script>
+</body>
+</html>

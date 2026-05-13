@@ -1,0 +1,51 @@
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Playfair+Display:ital,wght@0,700;0,900;1,700&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600;9..40,700&display=swap');
+
+:root {
+  --pink:   #FF1E9E;
+  --purple: #F057FF;
+  --red:    #FF0A10;
+  
+  --black:  #070707;
+  --dark0:  #0a0a0a;
+  --dark1:  #0f0f0f;
+  --dark2:  #161616;
+  --dark3:  #1f1f1f;
+  --dark4:  #292929;
+  --white:  #ffffff;
+  --gray:   #5a5a5a;
+  --muted:  #888888;
+  --light:  #c0c0c0;
+
+  --g:      linear-gradient(135deg, #FF1E9E 0%, #F057FF 55%, #FF0A10 100%);
+  --g90:    linear-gradient(90deg,  #FF1E9E, #F057FF);
+  --g-dim:  linear-gradient(135deg, rgba(255,30,158,.10), rgba(240,87,255,.06));
+
+  --glow:   0 0 60px rgba(255,30,158,.45), 0 0 120px rgba(240,87,255,.18);
+  --glow-s: 0 0 25px rgba(255,30,158,.4);
+  --shadow-card: 0 8px 32px rgba(0,0,0,.5), 0 0 0 0.5px rgba(255,255,255,.06);
+
+  --f-head:  'Bebas Neue', cursive;
+  --f-serif: 'Playfair Display', serif;
+  --f-body:  'DM Sans', sans-serif;
+
+  --dur:    .35s;
+  --r:      12px;
+  --r-lg:   20px;
+  --r-xl:   28px;
+  --r-full: 999px;
+
+  /* Breakpoints */
+  --bp-sm:  480px;
+  --bp-md:  768px;
+  --bp-lg:  1024px;
+  --bp-xl:  1280px;
+  
+  --bg:        var(--black);
+  --surface:   var(--dark2);
+  --surface-2: var(--dark3);
+  --border:    rgba(255,255,255,.07);
+  --border-g:  rgba(255,30,158,.25);
+  --text:      var(--white);
+  --text-2:    var(--light);
+  --text-3:    var(--muted);
+}

@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shopping Date — Connexion Candidat</title>
+  <link rel="stylesheet" href="/css/variables.css">
+  <link rel="stylesheet" href="/css/global.css">
+</head>
+<body>
+  <div class="auth-layout">
+    <div class="auth-card">
+      <div class="brand-block">
+        <img src="/logo.png" alt="Shopping Date" class="brand-mark">
+        <div>
+          <span class="auth-kicker">Saison 1 · En cours</span>
+          <h1>Shopping Date</h1>
+        </div>
+      </div>
+
+      <h2>Connexion Candidat</h2>
+      <p class="auth-copy">Entre ton email et ton mot de passe personnel.</p>
+
+      <form data-login-form class="auth-form">
+        <div class="field">
+          <span>Adresse email</span>
+          <input type="email" name="email" required placeholder="ton@email.com">
+        </div>
+        <div class="field">
+          <span>Mot de passe</span>
+          <input type="text" name="password" required maxlength="10" placeholder="Ex: 22355">
+        </div>
+
+        <button type="submit" class="auth-button">Se connecter</button>
+      </form>
+
+      <div class="auth-feedback" data-feedback></div>
+
+      <p class="auth-hint">
+        <strong>Règle :</strong> 3 chiffres du milieu + 2 derniers chiffres de ton numéro de téléphone.<br>
+        Exemple : 01 22 33 44 55 → <strong>22355</strong>
+      </p>
+
+      <p class="auth-hint">
+        <a href="/pages/admin-login.html">→ Accès Administrateur</a>
+      </p>
+    </div>
+  </div>
+
+  <script src="/data/participants.js"></script>
+  <script src="/js/storage.js"></script>
+  <script src="/js/auth.js"></script>
+</body>
+</html>

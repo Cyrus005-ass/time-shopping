@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shopping Date - Espace Candidat</title>
+  <link rel="stylesheet" href="/css/variables.css">
+  <link rel="stylesheet" href="/css/global.css">
+  <link rel="stylesheet" href="/css/participant.css">
+</head>
+<body>
+  <div class="dashboard-shell">
+    <div class="hero-card">
+      <div class="participant-hero">
+        <div>
+          <h1 data-session-name>Bienvenue</h1>
+          <p data-session-meta></p>
+        </div>
+        <button class="auth-button outline" data-logout>Déconnexion</button>
+      </div>
+    </div>
+
+    <div class="dashboard-grid">
+      <!-- Jocker -->
+      <div class="panel jocker-panel">
+        <h2>🎟️ Jocker Shopping</h2>
+        <p class="panel-copy">Active le jocker avant de lancer ton chrono. Tu pourras inviter quelqu’un pour t’aider pendant la date, mais ton temps sera réduit de 1h.</p>
+        <button class="auth-button" data-jocker-launch>Activer le jocker</button>
+        <p class="chrono-status" data-jocker-status aria-live="polite"></p>
+      </div>
+
+      <!-- Chrono -->
+      <div class="panel chrono-panel">
+        <h2>⏱️ Ton Chrono</h2>
+        <div class="countdown-display">
+          <div class="countdown-value" data-countdown-value>03:00:00</div>
+          <p class="countdown-copy" data-countdown-copy>Appuie sur "Lancer le chrono" pour démarrer.</p>
+        </div>
+        <div class="chrono-progress"><div class="chrono-progress-bar" data-chrono-progress></div></div>
+        <button class="auth-button" data-chrono-launch>Lancer le chrono</button>
+        <p class="chrono-status" data-chrono-status aria-live="polite"></p>
+      </div>
+
+      <!-- Thème -->
+      <div class="panel">
+        <h2>💞 Ton Thème</h2>
+        <div data-theme-list>
+          <!-- Rendu dynamique -->
+        </div>
+      </div>
+
+      <!-- Énigmes -->
+      <div class="panel panel-wide">
+        <h2>🧩 Énigmes</h2>
+        <div data-riddle-list>
+          <!-- Rendu dynamique -->
+        </div>
+      </div>
+
+      <!-- Notifications -->
+      <div class="panel panel-wide">
+        <h2>🛎️ Notifications</h2>
+        <div data-notification-list>
+          <!-- Rendu dynamique -->
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/data/participants.js"></script>
+  <script src="/js/storage.js"></script>
+  <script src="/js/chrono.js"></script>
+  <script src="/js/enigme.js"></script>
+  <script src="/js/participant.js"></script>
+</body>
+</html>

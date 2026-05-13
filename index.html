@@ -1,0 +1,84 @@
+﻿<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Shopping Date - Saison 1</title>
+  <link rel="stylesheet" href="/css/variables.css">
+  <link rel="stylesheet" href="/css/global.css">
+  <style>
+    .landing {
+      min-height: 100dvh;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 24px;
+      background: var(--bg);
+    }
+    .landing-card {
+      max-width: 560px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--r-xl);
+      padding: 48px 32px;
+      box-shadow: var(--shadow-card);
+    }
+    .landing h1 {
+      font-family: var(--f-head);
+      font-size: clamp(28px, 6vw, 42px);
+      margin-bottom: 16px;
+      background: var(--g);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .welcome-text {
+      font-size: 18px;
+      line-height: 1.7;
+      color: var(--text-2);
+      margin-bottom: 32px;
+    }
+    .btn-start {
+      display: inline-block;
+      background: var(--g);
+      color: white;
+      padding: 16px 32px;
+      border-radius: var(--r);
+      font-size: 17px;
+      font-weight: 700;
+      text-decoration: none;
+      margin-top: 16px;
+      transition: all .3s;
+    }
+    .btn-start:hover {
+      transform: translateY(-3px);
+      box-shadow: var(--glow-s);
+    }
+  </style>
+</head>
+<body>
+  <div class="landing">
+    <div class="landing-card">
+      <img src="/logo.png" alt="Shopping Date" class="brand-mark" style="width: 90px; height: 90px; margin-bottom: 24px;">
+      
+      <h1>Shopping Date</h1>
+      <p class="auth-kicker">SAISON 1 • OFFICIEL</p>
+      
+      <div class="welcome-text">
+        <strong>Félicitations !</strong><br><br>
+        Si vous êtes ici, c’est que vous avez été officiellement sélectionné(e) 
+        pour participer à <strong>Shopping Date - Saison 1</strong>.<br><br>
+        
+        Veuillez suivre les instructions ci-dessous pour vous connecter.
+      </div>
+
+      <a href="/pages/login.html" class="btn-start">
+        Accéder à mon espace candidat →
+      </a>
+
+      <p style="margin-top: 40px; font-size: 14px; color: var(--text-3);">
+        Besoin d'aide ? Contactez l'équipe de production
+      </p>
+    </div>
+  </div>
+</body>
+</html>

@@ -25,6 +25,14 @@
   const riddleList = document.querySelector('[data-riddle-list]');
   const riddleFeedback = document.querySelector('[data-riddle-feedback]');
   const notificationList = document.querySelector('[data-notification-list]');
+  const soundStatus = document.querySelector('[data-sound-status]');
+  const notificationSound = window.SDNotificationSound?.createController({
+    statusNode: soundStatus,
+    idleMessage: 'Le son des notifications sera actif apres un premier clic sur cette page.'
+  });
+
+  let seenRiddleNotificationIds = new Set();
+  let riddleNotificationSoundReady = false;
 
   function escapeHtml(value) {
     return String(value ?? '')
@@ -65,6 +73,23 @@
 
   function getNotifications() {
     return window.SDStorage.getNotifications({ scope: 'participant', participantId });
+  }
+
+  function syncRiddleNotificationSound() {
+    const ids = getNotifications()
+      .filter((notification) => notification.type === 'riddle_sent')
+      .slice(0, 50)
+      .map((notification) => notification.id);
+
+    const hasNewNotification = riddleNotificationSoundReady
+      && ids.some((id) => !seenRiddleNotificationIds.has(id));
+
+    seenRiddleNotificationIds = new Set(ids);
+    riddleNotificationSoundReady = true;
+
+    if (hasNewNotification) {
+      notificationSound?.play('participant');
+    }
   }
 
   function renderHeader() {
@@ -281,6 +306,7 @@
     renderTheme();
     renderRiddles();
     renderNotifications();
+    syncRiddleNotificationSound();
   }
 
   function renderDynamicContent() {

@@ -37,6 +37,14 @@
   const selectA = document.querySelector('[data-select-a]');
   const selectB = document.querySelector('[data-select-b]');
   const riddleSelect = document.querySelector('[data-riddle-target]');
+  const soundStatus = document.querySelector('[data-sound-status]');
+  const notificationSound = window.SDNotificationSound?.createController({
+    statusNode: soundStatus,
+    idleMessage: 'Le son des notifications sera actif apres un premier clic sur cette page.'
+  });
+
+  let seenAnswerNotificationIds = new Set();
+  let answerNotificationSoundReady = false;
 
   if (adminName) adminName.textContent = adminSession.fullName || adminSession.email;
 
@@ -78,6 +86,23 @@
     select.value = exists ? value : '';
   }
 
+  function syncAnswerNotificationSound() {
+    const ids = window.SDStorage.getNotifications({ scope: 'admin' })
+      .filter((notification) => notification.type === 'riddle_answered')
+      .slice(0, 50)
+      .map((notification) => notification.id);
+
+    const hasNewNotification = answerNotificationSoundReady
+      && ids.some((id) => !seenAnswerNotificationIds.has(id));
+
+    seenAnswerNotificationIds = new Set(ids);
+    answerNotificationSoundReady = true;
+
+    if (hasNewNotification) {
+      notificationSound?.play('admin');
+    }
+  }
+
   function refreshAll() {
     window.SDStorage.syncScheduledRiddles();
     renderStats();
@@ -86,6 +111,7 @@
     renderPairings();
     renderRiddles();
     renderNotifications();
+    syncAnswerNotificationSound();
     renderChronos();
   }
 

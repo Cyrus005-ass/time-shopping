@@ -148,6 +148,19 @@ html, body {
 .auth-feedback[data-state="error"]   { color: #ff5c5c; }
 .auth-feedback[data-state="success"] { color: #4ade80; }
 
+.sound-status {
+  min-height: 20px;
+  margin-top: 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-3);
+}
+
+.sound-status[data-tone='success'] { color: #4ade80; }
+.sound-status[data-tone='warning'] { color: #facc15; }
+.sound-status[data-tone='error'] { color: #ff5c5c; }
+.sound-status[data-tone='muted'] { color: var(--text-3); }
+
 /* Hint */
 .auth-hint {
   margin-top: 28px;

@@ -5,13 +5,6 @@
     return;
   }
 
-  const adminSession = storage.getAdminSession();
-
-  if (!adminSession || adminSession.role !== 'admin') {
-    window.location.replace('/pages/admin-login.html');
-    return;
-  }
-
   const adminName = document.querySelector('[data-admin-name]');
   const logoutButton = document.querySelector('[data-admin-logout]');
   const adminForm = document.querySelector('[data-admin-form]');
@@ -45,8 +38,7 @@
 
   let seenAnswerNotificationIds = new Set();
   let answerNotificationSoundReady = false;
-
-  if (adminName) adminName.textContent = adminSession.fullName || adminSession.email;
+  let currentAdminSession = null;
 
   function fb(node, msg, state) {
     if (!node) return;
@@ -86,8 +78,50 @@
     select.value = exists ? value : '';
   }
 
-  function syncAnswerNotificationSound() {
-    const ids = window.SDStorage.getNotifications({ scope: 'admin' })
+  async function bootstrap() {
+    try {
+      currentAdminSession = await storage.getAdminSession();
+      if (!currentAdminSession || currentAdminSession.role !== 'admin') {
+        window.location.replace('/pages/admin-login.html');
+        return;
+      }
+
+      if (adminName) adminName.textContent = currentAdminSession.fullName || currentAdminSession.email;
+      await refreshAll();
+    } catch {
+      window.location.replace('/pages/admin-login.html');
+    }
+  }
+
+  async function loadSnapshot() {
+    const [counts, participants, pairings, riddles, notifications] = await Promise.all([
+      storage.getDashboardCounts(),
+      storage.getAllParticipants(true),
+      storage.getActivePairings(),
+      storage.getRiddles(),
+      storage.getNotifications({ scope: 'admin' })
+    ]);
+
+    const chronos = await Promise.all(participants.map(async (participant) => {
+      const [state, participantRiddles] = await Promise.all([
+        storage.completeChronoIfExpired(participant.id).catch(() => null),
+        storage.getRiddlesForParticipant(participant.id).catch(() => [])
+      ]);
+      return { participantId: participant.id, state, riddles: participantRiddles };
+    }));
+
+    return {
+      counts,
+      participants,
+      pairings,
+      riddles,
+      notifications,
+      chronos
+    };
+  }
+
+  function syncAnswerNotificationSound(notifications) {
+    const ids = notifications
       .filter((notification) => notification.type === 'riddle_answered')
       .slice(0, 50)
       .map((notification) => notification.id);
@@ -103,28 +137,29 @@
     }
   }
 
-  function refreshAll() {
-    window.SDStorage.syncScheduledRiddles();
-    renderStats();
-    renderSelectors();
-    renderParticipants();
-    renderPairings();
-    renderRiddles();
-    renderNotifications();
-    syncAnswerNotificationSound();
-    renderChronos();
+  async function refreshAll() {
+    await storage.syncScheduledRiddles().catch(() => false);
+    const snapshot = await loadSnapshot();
+    renderStats(snapshot.counts);
+    renderSelectors(snapshot.participants);
+    renderParticipants(snapshot.participants);
+    renderPairings(snapshot.pairings, snapshot.participants);
+    renderRiddles(snapshot.riddles, snapshot.participants);
+    renderNotifications(snapshot.notifications, snapshot.participants);
+    syncAnswerNotificationSound(snapshot.notifications);
+    renderChronos(snapshot.chronos, snapshot.participants);
   }
 
-  logoutButton?.addEventListener('click', () => {
-    storage.clearAdminSession();
+  logoutButton?.addEventListener('click', async () => {
+    await storage.clearAdminSession().catch(() => null);
     window.location.replace('/pages/admin-login.html');
   });
 
-  adminForm?.addEventListener('submit', (event) => {
+  adminForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const nom = String(adminForm.elements.nom.value || '').trim();
     const prenom = String(adminForm.elements.prenom.value || '').trim();
-    const email = window.SDStorage.normalizeEmail(adminForm.elements.email.value);
+    const email = storage.normalizeEmail(adminForm.elements.email.value);
     const password = String(adminForm.elements.password.value || '').trim();
     const telephone = String(adminForm.elements.telephone.value || '').trim();
 
@@ -136,28 +171,26 @@
       return fb(adminFeedback, 'Le mot de passe doit contenir au moins 4 caractères.', 'error');
     }
 
-    if (window.SDStorage.findParticipantByEmail(email)) {
-      return fb(adminFeedback, 'Cet email existe déjà.', 'error');
+    try {
+      await storage.addRegisteredParticipant({
+        nom,
+        prenom,
+        email,
+        password,
+        telephone,
+        sexe: 'non renseigné',
+        source: 'admin'
+      });
+
+      adminForm.reset();
+      fb(adminFeedback, `Compte créé ! Identifiants : ${email} / ${password}`, 'success');
+      await refreshAll();
+    } catch (error) {
+      fb(adminFeedback, error?.message || 'Erreur lors de la création du compte.', 'error');
     }
-
-    window.SDStorage.addRegisteredParticipant({
-      id: `a-${Date.now().toString(36)}`,
-      nom,
-      prenom,
-      email,
-      password,
-      telephone,
-      sexe: 'non renseigné',
-      source: 'admin',
-      createdAt: new Date().toISOString()
-    });
-
-    adminForm.reset();
-    fb(adminFeedback, `Compte créé ! Identifiants : ${email} / ${password}`, 'success');
-    refreshAll();
   });
 
-  pairForm?.addEventListener('submit', (event) => {
+  pairForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const a = String(pairForm.elements.participant_a.value || '').trim();
     const b = String(pairForm.elements.participant_b.value || '').trim();
@@ -171,16 +204,16 @@
     }
 
     try {
-      window.SDStorage.createOrUpdatePairing([a, b], theme);
+      await storage.createOrUpdatePairing([a, b], theme);
       pairForm.reset();
       fb(pairFeedback, 'Binôme créé et thème envoyé avec succès !', 'success');
-      refreshAll();
+      await refreshAll();
     } catch (error) {
       fb(pairFeedback, error?.message || 'Erreur lors de la création.', 'error');
     }
   });
 
-  riddleForm?.addEventListener('submit', (event) => {
+  riddleForm?.addEventListener('submit', async (event) => {
     event.preventDefault();
     const participantId = String(riddleForm.elements.participant_id.value || '').trim();
     const question = String(riddleForm.elements.question.value || '').trim();
@@ -192,30 +225,30 @@
     }
 
     try {
-      window.SDStorage.createRiddle({ participantId, question, answer, sendAt: sendAt || null });
+      await storage.createRiddle({ participantId, question, answer, sendAt: sendAt || null });
       riddleForm.reset();
       fb(riddleFeedback, sendAt ? 'Énigme programmée avec succès.' : 'Énigme envoyée immédiatement.', 'success');
-      refreshAll();
+      await refreshAll();
     } catch (error) {
       fb(riddleFeedback, error?.message || 'Erreur.', 'error');
     }
   });
 
-  participantList?.addEventListener('click', (event) => {
+  participantList?.addEventListener('click', async (event) => {
     const editButton = event.target.closest('[data-participant-edit]');
     const deleteButton = event.target.closest('[data-participant-delete]');
 
     if (editButton) {
-      handleParticipantEdit(editButton.dataset.participantEdit);
+      await handleParticipantEdit(editButton.dataset.participantEdit);
     }
 
     if (deleteButton) {
-      handleParticipantDelete(deleteButton.dataset.participantDelete);
+      await handleParticipantDelete(deleteButton.dataset.participantDelete);
     }
   });
 
-  function handleParticipantEdit(id) {
-    const participant = window.SDStorage.findParticipantById(id);
+  async function handleParticipantEdit(id) {
+    const participant = await storage.findParticipantById(id);
     if (!participant) {
       return fb(participantFeedback, 'Profil introuvable.', 'error');
     }
@@ -229,14 +262,14 @@
     if (nextPrenom === null) return;
     const nextEmail = window.prompt('Email', participant.email || '');
     if (nextEmail === null) return;
-    const nextPassword = window.prompt('Mot de passe de connexion', window.SDStorage.getParticipantLoginPassword(participant) || '');
+    const nextPassword = window.prompt('Mot de passe de connexion', storage.getParticipantLoginPassword(participant) || '');
     if (nextPassword === null) return;
     const nextTelephone = window.prompt('Numéro de téléphone', participant.telephone || '');
     if (nextTelephone === null) return;
 
     const nom = String(nextNom).trim();
     const prenom = String(nextPrenom).trim();
-    const email = window.SDStorage.normalizeEmail(nextEmail);
+    const email = storage.normalizeEmail(nextEmail);
     const password = String(nextPassword).trim();
     const telephone = String(nextTelephone).trim();
 
@@ -248,25 +281,24 @@
       return fb(participantFeedback, 'Le mot de passe doit contenir au moins 4 caractères.', 'error');
     }
 
-    const existing = window.SDStorage.findParticipantByEmail(email);
-    if (existing && existing.id !== id) {
-      return fb(participantFeedback, 'Cet email existe déjà.', 'error');
+    try {
+      await storage.updateRegisteredParticipant(id, {
+        nom,
+        prenom,
+        email,
+        password,
+        telephone
+      });
+
+      fb(participantFeedback, 'Profil mis à jour.', 'success');
+      await refreshAll();
+    } catch (error) {
+      fb(participantFeedback, error?.message || 'Erreur lors de la mise à jour.', 'error');
     }
-
-    window.SDStorage.updateRegisteredParticipant(id, {
-      nom,
-      prenom,
-      email,
-      password,
-      telephone
-    });
-
-    fb(participantFeedback, 'Profil mis à jour.', 'success');
-    refreshAll();
   }
 
-  function handleParticipantDelete(id) {
-    const participant = window.SDStorage.findParticipantById(id);
+  async function handleParticipantDelete(id) {
+    const participant = await storage.findParticipantById(id);
     if (!participant) {
       return fb(participantFeedback, 'Profil introuvable.', 'error');
     }
@@ -274,30 +306,32 @@
       return fb(participantFeedback, 'Ce profil est en lecture seule.', 'error');
     }
 
-    const confirmed = window.confirm(`Supprimer le profil ${window.SDStorage.participantFullName(participant)} ?`);
+    const confirmed = window.confirm(`Supprimer le profil ${storage.participantFullName(participant)} ?`);
     if (!confirmed) return;
 
-    const deleted = window.SDStorage.deleteRegisteredParticipant(id);
-    if (!deleted) {
-      return fb(participantFeedback, 'Impossible de supprimer ce profil.', 'error');
-    }
+    try {
+      const deleted = await storage.deleteRegisteredParticipant(id);
+      if (!deleted?.deleted) {
+        return fb(participantFeedback, 'Impossible de supprimer ce profil.', 'error');
+      }
 
-    fb(participantFeedback, 'Profil supprimé.', 'success');
-    refreshAll();
+      fb(participantFeedback, 'Profil supprimé.', 'success');
+      await refreshAll();
+    } catch (error) {
+      fb(participantFeedback, error?.message || 'Impossible de supprimer ce profil.', 'error');
+    }
   }
 
-  function renderStats() {
-    const counts = window.SDStorage.getDashboardCounts();
+  function renderStats(counts) {
     if (countParticipants) countParticipants.textContent = `${counts.participants} candidat${counts.participants > 1 ? 's' : ''}`;
     if (countPairings) countPairings.textContent = `${counts.pairings} binôme${counts.pairings > 1 ? 's' : ''}`;
     if (countRiddles) countRiddles.textContent = `${counts.riddles} énigme${counts.riddles > 1 ? 's' : ''}`;
     if (countNotifs) countNotifs.textContent = `${counts.notifications} notif${counts.notifications > 1 ? 's' : ''}`;
   }
 
-  function renderSelectors() {
-    const participants = window.SDStorage.getAllParticipants();
+  function renderSelectors(participants) {
     const options = participants.map((participant) => {
-      const label = window.SDStorage.participantFullName(participant) || participant.email || participant.id;
+      const label = storage.participantFullName(participant) || participant.email || participant.id;
       return `<option value="${esc(participant.id)}">${esc(label)}</option>`;
     }).join('');
     const empty = '<option value="">— Choisir un candidat —</option>';
@@ -320,18 +354,20 @@
     }
   }
 
-  function renderChronos() {
+  function renderChronos(chronos, participants) {
     if (!chronoList) return;
-    const participants = window.SDStorage.getAllParticipants();
 
     if (!participants.length) {
       chronoList.innerHTML = '<tr><td colspan="8" class="admin-empty">Aucun candidat enregistré.</td></tr>';
       return;
     }
 
+    const byParticipant = new Map(chronos.map((entry) => [entry.participantId, entry]));
+
     chronoList.innerHTML = participants.map((participant) => {
-      const state = window.SDStorage.completeChronoIfExpired(participant.id);
-      const riddles = window.SDStorage.getRiddlesForParticipant(participant.id);
+      const entry = byParticipant.get(participant.id) || { state: null, riddles: [] };
+      const state = entry.state;
+      const riddles = entry.riddles || [];
 
       let statusBadge = '<span class="chrono-badge idle">En attente</span>';
       let timeCell = '<span class="chrono-cell idle">—</span>';
@@ -355,7 +391,7 @@
       }
 
       const dots = [0, 1, 2].map((slot) => {
-        const riddle = riddles[slot];
+        const riddle = riddles.find((item) => Number(item.slotIndex) === slot) || riddles[slot];
         if (!riddle) return '<span class="enigme-dot pending" title="Pas d’énigme"></span>';
         if (riddle.status === 'solved') return '<span class="enigme-dot done" title="Résolue"></span>';
         if (riddle.status === 'sent') return '<span class="enigme-dot active" title="En cours"></span>';
@@ -375,12 +411,11 @@
     }).join('');
   }
 
-  function renderParticipants() {
+  function renderParticipants(list) {
     if (!participantList) return;
-    const list = window.SDStorage.getAllParticipants();
 
     participantList.innerHTML = list.length ? list.map((participant) => {
-      const pwd = window.SDStorage.getParticipantLoginPassword(participant) || '—';
+      const pwd = storage.getParticipantLoginPassword(participant) || '—';
       const sourceLabel = participant.source === 'admin'
         ? 'Admin'
         : participant.source === 'manuel'
@@ -403,13 +438,15 @@
     }).join('') : '<tr><td colspan="7" class="admin-empty">Aucun profil.</td></tr>';
   }
 
-  function renderPairings() {
+  function renderPairings(list, participants) {
     if (!pairingList) return;
-    const list = window.SDStorage.getActivePairings();
+    const participantsById = new Map(participants.map((participant) => [participant.id, participant]));
 
     pairingList.innerHTML = list.length ? list.map((pairing) => {
-      const a = window.SDStorage.participantFullName(window.SDStorage.findParticipantById(pairing.participantIds[0]));
-      const b = window.SDStorage.participantFullName(window.SDStorage.findParticipantById(pairing.participantIds[1]));
+      const participantA = participantsById.get(pairing.participantIds[0]);
+      const participantB = participantsById.get(pairing.participantIds[1]);
+      const a = pairing.nameA || storage.participantFullName(participantA);
+      const b = pairing.nameB || storage.participantFullName(participantB);
       return `<tr>
         <td>${esc(a)}</td>
         <td>${esc(b)}</td>
@@ -419,17 +456,17 @@
     }).join('') : '<tr><td colspan="4" class="admin-empty">Aucun binôme actif.</td></tr>';
   }
 
-  function renderRiddles() {
+  function renderRiddles(list, participants) {
     if (!riddleList) return;
-    const list = window.SDStorage.getRiddles();
+    const participantsById = new Map(participants.map((participant) => [participant.id, participant]));
 
     riddleList.innerHTML = list.length ? list.map((riddle) => {
-      const participant = window.SDStorage.findParticipantById(riddle.participantId);
+      const participant = participantsById.get(riddle.participantId);
       const last = riddle.responses?.[0] || null;
       const result = last ? (last.isCorrect ? '✅ Correct' : '❌ Faux') : '—';
 
       return `<tr>
-        <td>${esc(window.SDStorage.participantFullName(participant))}</td>
+        <td>${esc(storage.participantFullName(participant))}</td>
         <td>${esc(riddle.question)}</td>
         <td><span class="status-chip ${riddle.status}">${riddle.status}</span></td>
         <td>${esc(last ? last.text : '—')}</td>
@@ -439,13 +476,14 @@
     }).join('') : '<tr><td colspan="6" class="admin-empty">Aucune énigme.</td></tr>';
   }
 
-  function renderNotifications() {
+  function renderNotifications(list, participants) {
     if (!notifList) return;
-    const list = window.SDStorage.getNotifications({ scope: 'admin' });
+    const participantsById = new Map(participants.map((participant) => [participant.id, participant]));
 
     notifList.innerHTML = list.length ? list.map((notification) => {
+      const participant = participantsById.get(notification.participantId);
       const target = notification.participantId
-        ? window.SDStorage.participantFullName(window.SDStorage.findParticipantById(notification.participantId))
+        ? storage.participantFullName(participant)
         : 'Admin';
       return `<tr>
         <td>${esc(notification.title)}</td>
@@ -456,12 +494,8 @@
     }).join('') : '<tr><td colspan="4" class="admin-empty">Aucune notification.</td></tr>';
   }
 
-  window.addEventListener('storage', refreshAll);
-
-  refreshAll();
+  bootstrap();
   setInterval(() => {
-    if (window.SDStorage.syncScheduledRiddles()) refreshAll();
-    else renderChronos();
+    refreshAll().catch(() => null);
   }, 5000);
-  setInterval(renderChronos, 1000);
 })();

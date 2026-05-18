@@ -1,16 +1,11 @@
 (() => {
-  const session = window.SDStorage?.getSession();
-
-  if (!session || session.role !== 'participant') {
+  const storage = window.SDStorage;
+  if (!storage) {
     window.location.replace('/pages/login.html');
     return;
   }
 
-  const participantId = String(session.id || '').trim();
-  const participant = window.SDStorage.findParticipantById(participantId) || session;
-  const fullName = window.SDStorage.participantFullName(participant);
   const defaultDurationHours = 3;
-
   const welcomeNode = document.querySelector('[data-session-name]');
   const metaNode = document.querySelector('[data-session-meta]');
   const logoutButton = document.querySelector('[data-logout]');
@@ -31,8 +26,13 @@
     idleMessage: 'Le son des notifications sera actif apres un premier clic sur cette page.'
   });
 
+  let session = null;
+  let participant = null;
+  let participantId = '';
+  let fullName = '';
   let seenRiddleNotificationIds = new Set();
   let riddleNotificationSoundReady = false;
+  let currentSnapshot = null;
 
   function escapeHtml(value) {
     return String(value ?? '')
@@ -55,28 +55,48 @@
     else node.removeAttribute('data-tone');
   }
 
-  function getChronoState() {
-    return window.SDStorage.completeChronoIfExpired(participantId);
+  async function bootstrap() {
+    try {
+      session = await storage.getSession();
+      if (!session || session.role !== 'participant') {
+        window.location.replace('/pages/login.html');
+        return;
+      }
+
+      participantId = String(session.id || '').trim();
+      participant = await storage.findParticipantById(participantId).catch(() => null);
+      participant = participant || session;
+      fullName = storage.participantFullName(participant);
+
+      await refreshAll();
+      setInterval(() => {
+        if (currentSnapshot) {
+          renderChrono(currentSnapshot);
+        }
+      }, 1000);
+
+      setInterval(() => {
+        refreshAll().catch(() => null);
+      }, 5000);
+    } catch {
+      window.location.replace('/pages/login.html');
+    }
   }
 
-  function getJockerState() {
-    return window.SDStorage.getJockerState(participantId);
+  async function loadSnapshot() {
+    const [chrono, jocker, pairing, riddles, notifications] = await Promise.all([
+      storage.completeChronoIfExpired(participantId).catch(() => null),
+      storage.getJockerState(participantId).catch(() => null),
+      storage.getPairingForParticipant(participantId).catch(() => null),
+      storage.getRiddlesForParticipant(participantId).catch(() => []),
+      storage.getNotifications({ scope: 'participant', participantId }).catch(() => [])
+    ]);
+
+    return { chrono, jocker, pairing, riddles, notifications };
   }
 
-  function getPairing() {
-    return window.SDStorage.getPairingForParticipant(participantId);
-  }
-
-  function getRiddles() {
-    return window.SDStorage.getRiddlesForParticipant(participantId);
-  }
-
-  function getNotifications() {
-    return window.SDStorage.getNotifications({ scope: 'participant', participantId });
-  }
-
-  function syncRiddleNotificationSound() {
-    const ids = getNotifications()
+  function syncRiddleNotificationSound(notifications) {
+    const ids = notifications
       .filter((notification) => notification.type === 'riddle_sent')
       .slice(0, 50)
       .map((notification) => notification.id);
@@ -98,9 +118,9 @@
     document.title = `Shopping Date - ${fullName}`;
   }
 
-  function renderJocker() {
-    const chrono = getChronoState();
-    const jocker = getJockerState();
+  function renderJocker(snapshot) {
+    const chrono = snapshot.chrono;
+    const jocker = snapshot.jocker;
 
     if (chrono?.startedAt) {
       if (chrono.jockerUsed) {
@@ -135,9 +155,9 @@
     }
   }
 
-  function renderChrono() {
-    const chrono = getChronoState();
-    const jocker = getJockerState();
+  function renderChrono(snapshot) {
+    const chrono = snapshot.chrono;
+    const jocker = snapshot.jocker;
     const plannedHours = chrono?.startedAt
       ? Math.max(1, Number(chrono.durationHours) || defaultDurationHours)
       : (jocker?.active ? Math.max(1, defaultDurationHours - 1) : defaultDurationHours);
@@ -203,9 +223,9 @@
     if (progressBar) progressBar.style.width = `${Math.min(100, (elapsedMs / totalMs) * 100)}%`;
   }
 
-  function renderTheme() {
+  function renderTheme(snapshot) {
     if (!themeList) return;
-    const pairing = getPairing();
+    const pairing = snapshot.pairing;
 
     if (!pairing) {
       themeList.innerHTML = '<div class="section-empty">Aucun thème n’a encore été attribué à ton profil.</div>';
@@ -224,9 +244,9 @@
       </article>`;
   }
 
-  function renderRiddles() {
+  function renderRiddles(snapshot) {
     if (!riddleList) return;
-    const riddles = getRiddles().slice(0, 3);
+    const riddles = snapshot.riddles.slice(0, 3);
 
     if (!riddles.length) {
       riddleList.innerHTML = '<div class="section-empty">Aucune énigme n’a encore été envoyée pour ton profil.</div>';
@@ -277,9 +297,9 @@
     }).join('');
   }
 
-  function renderNotifications() {
+  function renderNotifications(snapshot) {
     if (!notificationList) return;
-    const notifications = getNotifications().slice(0, 5);
+    const notifications = snapshot.notifications.slice(0, 5);
 
     if (!notifications.length) {
       notificationList.innerHTML = '<div class="section-empty">Aucune notification pour le moment.</div>';
@@ -301,49 +321,43 @@
     }).join('');
   }
 
-  function renderStaticContent() {
+  async function refreshAll() {
+    await storage.syncScheduledRiddles().catch(() => false);
+    const snapshot = await loadSnapshot();
+    currentSnapshot = snapshot;
     renderHeader();
-    renderTheme();
-    renderRiddles();
-    renderNotifications();
-    syncRiddleNotificationSound();
+    renderTheme(snapshot);
+    renderRiddles(snapshot);
+    renderNotifications(snapshot);
+    syncRiddleNotificationSound(snapshot.notifications);
+    renderJocker(snapshot);
+    renderChrono(snapshot);
   }
 
-  function renderDynamicContent() {
-    renderJocker();
-    renderChrono();
-  }
-
-  function refreshAll() {
-    window.SDStorage.syncScheduledRiddles();
-    renderStaticContent();
-    renderDynamicContent();
-  }
-
-  logoutButton?.addEventListener('click', () => {
-    window.SDStorage.clearSession();
+  logoutButton?.addEventListener('click', async () => {
+    await storage.clearSession().catch(() => null);
     window.location.replace('/pages/login.html');
   });
 
-  jockerButton?.addEventListener('click', () => {
+  jockerButton?.addEventListener('click', async () => {
     try {
-      window.SDStorage.activateJocker(participantId);
-      renderDynamicContent();
+      await storage.activateJocker(participantId);
+      await refreshAll();
     } catch (error) {
       setStatus(jockerStatus, error?.message || 'Impossible d’activer le jocker.', 'error');
     }
   });
 
-  chronoButton?.addEventListener('click', () => {
+  chronoButton?.addEventListener('click', async () => {
     try {
-      window.SDStorage.startParticipantChrono(participantId, defaultDurationHours);
-      refreshAll();
+      await storage.startParticipantChrono(participantId, defaultDurationHours);
+      await refreshAll();
     } catch (error) {
       setStatus(chronoStatus, error?.message || 'Impossible de lancer le chrono.', 'error');
     }
   });
 
-  riddleList?.addEventListener('submit', (event) => {
+  riddleList?.addEventListener('submit', async (event) => {
     const form = event.target.closest('[data-riddle-answer-form]');
     if (!form) return;
 
@@ -359,10 +373,9 @@
     }
 
     try {
-      const result = window.SDStorage.answerRiddle(riddleId, participantId, responseText);
+      const result = await storage.answerRiddle(riddleId, participantId, responseText);
       setStatus(riddleFeedback, result.message, result.isCorrect ? 'success' : 'error');
-      renderStaticContent();
-      renderDynamicContent();
+      await refreshAll();
 
       if (!result.isCorrect) {
         const reopenedForm = riddleList.querySelector(`[data-riddle-answer-form][data-riddle-id="${riddleId}"]`);
@@ -376,12 +389,5 @@
     }
   });
 
-  window.addEventListener('storage', refreshAll);
-
-  refreshAll();
-  setInterval(() => {
-    const changed = window.SDStorage.syncScheduledRiddles();
-    if (changed) renderStaticContent();
-    renderDynamicContent();
-  }, 1000);
+  bootstrap();
 })();

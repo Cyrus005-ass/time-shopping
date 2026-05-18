@@ -1,24 +1,44 @@
 ﻿# Shopping Date - Saison 1
 
-Application web de gestion d'un jeu de shopping romantique avec chronomètre, énigmes et binômes.
+Application web de gestion du jeu avec connexion admin/candidat, chrono, enigmes, binomes et notifications, desormais basee sur PHP + MySQL.
 
-## Fonctionnalités
-- Connexion Candidat / Admin (localStorage)
-- Chrono 3h (réductible à 2h avec Jocker)
-- Système d'énigmes par slot (H+0, H+1, H+2)
-- Création de binômes + thèmes
-- Tableau de bord Admin complet
-- Tout fonctionne hors ligne
+## Stack
+- Front HTML / CSS / JS
+- API JSON en PHP
+- Sessions PHP cote serveur
+- Base MySQL partagee en production
+- Base MySQL locale pour les tests
 
 ## Structure
-- `/pages/` → Pages HTML
-- `/css/` → Styles
-- `/js/` → Logique
-- `/data/` → Données participants
+- `/pages/` : interfaces admin et candidat
+- `/js/` : logique front reliée a l'API PHP
+- `/api/` : endpoints JSON
+- `/database/schema.sql` : schema MySQL a importer
+- `config.php` : configuration et selection auto local/production
 
-## Identifiants Admin
-- Email : `admin@shoppingdate.local`
-- Mot de passe : `admin2026`
+## Base de donnees
+`config.php` gere 2 connexions automatiquement :
+- `local` : `127.0.0.1` / base `shopping_date` / user `root` / mot de passe vide
+- `production` : `sql200.ezyro.com` / base `ezyro_41953495_shopping`
 
-## Déploiement
-Prêt pour Vercel (fichier `vercel.json` inclus).
+Selection automatique :
+- `localhost`, `127.0.0.1`, `::1` ou execution CLI => mode `local`
+- tout autre domaine => mode `production`
+
+Si ton hebergement permet les variables d'environnement, tu peux aussi forcer le mode avec `APP_ENV=local` ou `APP_ENV=production`.
+
+## Installation locale
+1. Cree une base MySQL locale nommee `shopping_date`.
+2. Importe `database/schema.sql`.
+3. Place le projet dans un serveur PHP local.
+4. Ouvre le site via `http://localhost/...`.
+
+## Installation en production
+1. Selectionne la base `ezyro_41953495_shopping` dans phpMyAdmin.
+2. Importe `database/schema.sql`.
+3. Deploie les fichiers sur l'hebergement PHP.
+4. Ouvre le lien distant et l'application utilisera automatiquement la connexion de production.
+
+## Identifiants admin par defaut
+- `admin@shoppingdate.local` / `admin2026`
+- `admin2@shoppingdate.local` / `admin2026a`

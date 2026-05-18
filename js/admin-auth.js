@@ -4,44 +4,43 @@
 
   const storage = window.SDStorage;
   const feedback = document.querySelector('[data-feedback]');
-
   if (!storage) return;
-  storage.getAdminAccounts();
-
-  const adminSession = storage.getAdminSession();
-  if (adminSession && adminSession.role === 'admin') {
-    window.location.replace('/pages/admin.html');
-    return;
-  }
-
-  form.addEventListener('submit', (event) => {
-    event.preventDefault();
-
-    const email = storage.normalizeEmail(form.elements.email.value);
-    const password = String(form.elements.password.value || '').trim();
-
-    const account = storage.getAdminAccounts().find((acc) =>
-      acc.email === email && acc.password === password
-    );
-
-    if (!account) {
-      showFeedback('Identifiants administrateur incorrects.', 'error');
-      return;
-    }
-
-    storage.setAdminSession({
-      role: 'admin',
-      email: account.email,
-      fullName: account.fullName,
-      loginAt: new Date().toISOString()
-    });
-
-    window.location.assign('/pages/admin.html');
-  });
 
   function showFeedback(message, type) {
     if (!feedback) return;
     feedback.textContent = message;
     feedback.dataset.state = type;
   }
+
+  async function bootstrap() {
+    try {
+      const adminSession = await storage.getAdminSession();
+      if (adminSession && adminSession.role === 'admin') {
+        window.location.replace('/pages/admin.html');
+      }
+    } catch (error) {
+      showFeedback(error?.message || 'Impossible de vérifier la session admin.', 'error');
+    }
+  }
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+
+    const email = storage.normalizeEmail(form.elements.email.value);
+    const password = String(form.elements.password.value || '').trim();
+
+    if (!email || !password) {
+      showFeedback('Tous les champs sont obligatoires.', 'error');
+      return;
+    }
+
+    try {
+      await storage.adminLogin(email, password);
+      window.location.assign('/pages/admin.html');
+    } catch (error) {
+      showFeedback(error?.message || 'Identifiants administrateur incorrects.', 'error');
+    }
+  });
+
+  bootstrap();
 })();

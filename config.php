@@ -76,6 +76,10 @@ define('APP_DEBUG', APP_ENV === 'local');
 error_reporting(E_ALL);
 ini_set('display_errors', APP_DEBUG ? '1' : '0');
 ini_set('log_errors', '1');
+ini_set('default_charset', 'UTF-8');
+if (function_exists('mb_internal_encoding')) {
+    mb_internal_encoding('UTF-8');
+}
 
 define('DB_HOST', $dbConfig['host']);
 define('DB_NAME', $dbConfig['name']);

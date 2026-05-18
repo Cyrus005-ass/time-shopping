@@ -30,8 +30,8 @@
   let participant = null;
   let participantId = '';
   let fullName = '';
-  let seenRiddleNotificationIds = new Set();
-  let riddleNotificationSoundReady = false;
+  let seenParticipantNotificationIds = new Set();
+  let participantNotificationSoundReady = false;
   let currentSnapshot = null;
 
   function escapeHtml(value) {
@@ -95,17 +95,20 @@
     return { chrono, jocker, pairing, riddles, notifications };
   }
 
-  function syncRiddleNotificationSound(notifications) {
+  function syncParticipantNotificationSound(notifications) {
     const ids = notifications
-      .filter((notification) => notification.type === 'riddle_sent')
+      .filter((notification) => (
+        notification.type === 'riddle_sent'
+        || notification.type === 'riddle_answered'
+      ))
       .slice(0, 50)
       .map((notification) => notification.id);
 
-    const hasNewNotification = riddleNotificationSoundReady
-      && ids.some((id) => !seenRiddleNotificationIds.has(id));
+    const hasNewNotification = participantNotificationSoundReady
+      && ids.some((id) => !seenParticipantNotificationIds.has(id));
 
-    seenRiddleNotificationIds = new Set(ids);
-    riddleNotificationSoundReady = true;
+    seenParticipantNotificationIds = new Set(ids);
+    participantNotificationSoundReady = true;
 
     if (hasNewNotification) {
       notificationSound?.play('participant');
@@ -329,7 +332,7 @@
     renderTheme(snapshot);
     renderRiddles(snapshot);
     renderNotifications(snapshot);
-    syncRiddleNotificationSound(snapshot.notifications);
+    syncParticipantNotificationSound(snapshot.notifications);
     renderJocker(snapshot);
     renderChrono(snapshot);
   }

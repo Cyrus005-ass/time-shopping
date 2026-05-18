@@ -50,9 +50,11 @@
           <div class="field"><span>Nom</span><input type="text" name="nom" required></div>
           <div class="field"><span>Prénom</span><input type="text" name="prenom" required></div>
           <div class="field"><span>Email</span><input type="email" name="email" required></div>
+          <div class="field"><span>Mot de passe</span><input type="password" name="password" required minlength="4" maxlength="64" autocomplete="new-password" placeholder="Choisir un mot de passe"></div>
           <div class="field"><span>Numéro de téléphone</span><input type="tel" name="telephone" required></div>
           <button type="submit" class="auth-button">Créer le compte</button>
         </form>
+        <p class="auth-hint">Le candidat se connectera avec l'email et le mot de passe saisis ici.</p>
         <div class="auth-feedback" data-admin-feedback></div>
       </div>
 

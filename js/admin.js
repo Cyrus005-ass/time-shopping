@@ -125,10 +125,15 @@
     const nom = String(adminForm.elements.nom.value || '').trim();
     const prenom = String(adminForm.elements.prenom.value || '').trim();
     const email = window.SDStorage.normalizeEmail(adminForm.elements.email.value);
+    const password = String(adminForm.elements.password.value || '').trim();
     const telephone = String(adminForm.elements.telephone.value || '').trim();
 
-    if (!nom || !prenom || !email || !telephone) {
+    if (!nom || !prenom || !email || !password || !telephone) {
       return fb(adminFeedback, 'Tous les champs sont obligatoires.', 'error');
+    }
+
+    if (password.length < 4) {
+      return fb(adminFeedback, 'Le mot de passe doit contenir au moins 4 caractères.', 'error');
     }
 
     if (window.SDStorage.findParticipantByEmail(email)) {
@@ -140,6 +145,7 @@
       nom,
       prenom,
       email,
+      password,
       telephone,
       sexe: 'non renseigné',
       source: 'admin',
@@ -147,7 +153,7 @@
     });
 
     adminForm.reset();
-    fb(adminFeedback, `Compte créé ! Mot de passe : ${window.SDStorage.buildPasswordFromPhone(telephone)}`, 'success');
+    fb(adminFeedback, `Compte créé ! Identifiants : ${email} / ${password}`, 'success');
     refreshAll();
   });
 
@@ -223,16 +229,23 @@
     if (nextPrenom === null) return;
     const nextEmail = window.prompt('Email', participant.email || '');
     if (nextEmail === null) return;
+    const nextPassword = window.prompt('Mot de passe de connexion', window.SDStorage.getParticipantLoginPassword(participant) || '');
+    if (nextPassword === null) return;
     const nextTelephone = window.prompt('Numéro de téléphone', participant.telephone || '');
     if (nextTelephone === null) return;
 
     const nom = String(nextNom).trim();
     const prenom = String(nextPrenom).trim();
     const email = window.SDStorage.normalizeEmail(nextEmail);
+    const password = String(nextPassword).trim();
     const telephone = String(nextTelephone).trim();
 
-    if (!nom || !prenom || !email || !telephone) {
+    if (!nom || !prenom || !email || !password || !telephone) {
       return fb(participantFeedback, 'Tous les champs doivent être remplis.', 'error');
+    }
+
+    if (password.length < 4) {
+      return fb(participantFeedback, 'Le mot de passe doit contenir au moins 4 caractères.', 'error');
     }
 
     const existing = window.SDStorage.findParticipantByEmail(email);
@@ -244,6 +257,7 @@
       nom,
       prenom,
       email,
+      password,
       telephone
     });
 
@@ -366,7 +380,7 @@
     const list = window.SDStorage.getAllParticipants();
 
     participantList.innerHTML = list.length ? list.map((participant) => {
-      const pwd = window.SDStorage.buildPasswordFromPhone(participant.telephone) || '—';
+      const pwd = window.SDStorage.getParticipantLoginPassword(participant) || '—';
       const sourceLabel = participant.source === 'admin'
         ? 'Admin'
         : participant.source === 'manuel'

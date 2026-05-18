@@ -22,7 +22,12 @@
       return;
     }
 
-    const expectedPassword = storage.buildPasswordFromPhone(participant.telephone);
+    const expectedPassword = storage.getParticipantLoginPassword(participant);
+
+    if (!expectedPassword) {
+      showFeedback("Ce compte n'a pas de mot de passe configuré. Contacte la production.", 'error');
+      return;
+    }
 
     if (password !== expectedPassword) {
       showFeedback('Mot de passe incorrect.', 'error');

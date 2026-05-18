@@ -24,11 +24,11 @@
       <form data-login-form class="auth-form">
         <div class="field">
           <span>Adresse email</span>
-          <input type="email" name="email" required placeholder="ton@email.com">
+          <input type="email" name="email" required autocomplete="username" placeholder="ton@email.com">
         </div>
         <div class="field">
           <span>Mot de passe</span>
-          <input type="text" name="password" required maxlength="10" placeholder="Ex: 22355">
+          <input type="password" name="password" required maxlength="64" autocomplete="current-password" placeholder="Mot de passe fourni par la production">
         </div>
 
         <button type="submit" class="auth-button">Se connecter</button>
@@ -37,8 +37,8 @@
       <div class="auth-feedback" data-feedback></div>
 
       <p class="auth-hint">
-        <strong>R&egrave;gle :</strong> Utilisez les 3 chiffres suivant le &laquo; 01 &raquo; de votre num&eacute;ro de t&eacute;l&eacute;phone, suivis des 2 derniers chiffres du m&ecirc;me num&eacute;ro.<br>
-        <strong>NB :</strong> Le num&eacute;ro concern&eacute; est celui communiqu&eacute; &agrave; la production.
+        Utilisez l'email et le mot de passe communiqués par la production.<br>
+        Pour certains anciens comptes, le mot de passe peut encore correspondre à la règle basée sur le numéro de téléphone.
       </p>
     </div>
   </div>

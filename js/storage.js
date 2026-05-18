@@ -163,6 +163,15 @@
     return d.slice(2, 5) + d.slice(-2);
   }
 
+  function getParticipantLoginPassword(participant) {
+    if (!participant) return '';
+
+    const explicitPassword = String(participant.password || '').trim();
+    if (explicitPassword) return explicitPassword;
+
+    return buildPasswordFromPhone(participant.telephone);
+  }
+
   function normalizeText(value) {
     return String(value || '')
       .normalize('NFD')
@@ -622,6 +631,7 @@
     normalizeEmail,
     normalizePhone,
     buildPasswordFromPhone,
+    getParticipantLoginPassword,
     participantFullName,
 
     getChronoState,

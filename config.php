@@ -40,18 +40,16 @@ function app_db_profiles()
     return array(
         'local' => array(
             'host' => '127.0.0.1',
-            'port' => 3306,
             'name' => 'shopping_date',
             'user' => 'root',
             'pass' => '',
             'charset' => 'utf8mb4',
         ),
         'production' => array(
-            'host' => 'sql200.ezyro.com',
-            'port' => 3306,
+            'host' => 'sql200.byetcluster.com',
             'name' => 'ezyro_41953495_shopping',
             'user' => 'ezyro_41953495',
-            'pass' => '(3fc8b033)',
+            'pass' => '3fc8b033',
             'charset' => 'utf8mb4',
         ),
     );
@@ -74,8 +72,12 @@ $dbConfig = app_db_config($appEnv);
 
 define('APP_ENV', $appEnv);
 define('APP_DEBUG', APP_ENV === 'local');
+
+error_reporting(E_ALL);
+ini_set('display_errors', APP_DEBUG ? '1' : '0');
+ini_set('log_errors', '1');
+
 define('DB_HOST', $dbConfig['host']);
-define('DB_PORT', (int) $dbConfig['port']);
 define('DB_NAME', $dbConfig['name']);
 define('DB_USER', $dbConfig['user']);
 define('DB_PASS', $dbConfig['pass']);
@@ -98,9 +100,8 @@ function db()
     }
 
     $dsn = sprintf(
-        'mysql:host=%s;port=%d;dbname=%s;charset=%s',
+        'mysql:host=%s;dbname=%s;charset=%s',
         DB_HOST,
-        DB_PORT,
         DB_NAME,
         DB_CHARSET
     );

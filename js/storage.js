@@ -23,16 +23,17 @@
     }
 
     const response = await fetch(url.toString(), options);
+    const raw = await response.text();
     let payload = null;
 
     try {
-      payload = await response.json();
+      payload = raw ? JSON.parse(raw) : null;
     } catch {
-      throw new Error('Réponse serveur invalide.');
+      throw new Error(`Reponse serveur invalide (${response.status}).`);
     }
 
     if (!response.ok || !payload?.ok) {
-      throw new Error(payload?.error || 'Erreur serveur.');
+      throw new Error(payload?.error || `Erreur serveur (${response.status}).`);
     }
 
     return payload.data;

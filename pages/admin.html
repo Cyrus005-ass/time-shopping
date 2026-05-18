@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
@@ -16,15 +16,15 @@
         <div>
           <h1>Dashboard Production</h1>
           <p class='sound-status' data-sound-status aria-live='polite'></p>
-          <p>ConnectÃ© en tant que <strong data-admin-name></strong></p>
+          <p>Connecté en tant que <strong data-admin-name></strong></p>
         </div>
-        <button class="auth-button outline" data-admin-logout>DÃ©connexion</button>
+        <button class="auth-button outline" data-admin-logout>Déconnexion</button>
       </div>
     </div>
 
     <div class="dashboard-grid">
       <div class="panel panel-wide">
-        <h2>â±ï¸ Suivi des Chronos</h2>
+        <h2>⏱️ Suivi des Chronos</h2>
         <div class="table-wrap">
           <table class="data-table">
             <thead>
@@ -32,8 +32,8 @@
                 <th>Participant</th>
                 <th>Statut</th>
                 <th>Temps restant</th>
-                <th>DÃ©marrÃ© Ã </th>
-                <th>Fin prÃ©vue</th>
+                <th>Démarré à</th>
+                <th>Fin prévue</th>
                 <th>H+0</th>
                 <th>H+1</th>
                 <th>H+2</th>
@@ -45,21 +45,21 @@
       </div>
 
       <div class="panel">
-        <h2>âž• CrÃ©er un profil</h2>
+        <h2>➕ Créer un profil</h2>
         <form data-admin-form class="stack-form">
           <div class="field"><span>Nom</span><input type="text" name="nom" required></div>
-          <div class="field"><span>PrÃ©nom</span><input type="text" name="prenom" required></div>
+          <div class="field"><span>Prénom</span><input type="text" name="prenom" required></div>
           <div class="field"><span>Email</span><input type="email" name="email" required></div>
           <div class="field"><span>Mot de passe</span><input type="password" name="password" required minlength="4" maxlength="64" autocomplete="new-password" placeholder="Choisir un mot de passe"></div>
-          <div class="field"><span>NumÃ©ro de tÃ©lÃ©phone</span><input type="tel" name="telephone" required></div>
-          <button type="submit" class="auth-button">CrÃ©er le compte</button>
+          <div class="field"><span>Numéro de téléphone</span><input type="tel" name="telephone" required></div>
+          <button type="submit" class="auth-button">Créer le compte</button>
         </form>
         <p class="auth-hint">Le candidat se connectera avec l'email et le mot de passe saisis ici.</p>
         <div class="auth-feedback" data-admin-feedback></div>
       </div>
 
       <div class="panel">
-        <h2>ðŸ”— Lier un binÃ´me</h2>
+        <h2>🔗 Lier un binôme</h2>
         <form data-pair-form class="stack-form">
           <div class="field">
             <span>Participant A</span>
@@ -70,45 +70,45 @@
             <select data-select-b name="participant_b" required></select>
           </div>
           <div class="field">
-            <span>ThÃ¨me du binÃ´me</span>
-            <input type="text" name="theme" required placeholder="Ex: SoirÃ©e romantique">
+            <span>Thème du binôme</span>
+            <input type="text" name="theme" required placeholder="Ex: Soirée romantique">
           </div>
-          <button type="submit" class="auth-button">Envoyer le thÃ¨me</button>
+          <button type="submit" class="auth-button">Envoyer le thème</button>
         </form>
         <div class="auth-feedback" data-pair-feedback></div>
       </div>
 
       <div class="panel">
-        <h2>ðŸ§© Envoyer une Ã©nigme</h2>
+        <h2>🧩 Envoyer une énigme</h2>
         <form data-riddle-form class="stack-form">
           <div class="field">
             <span>Destinataire</span>
             <select data-riddle-target name="participant_id" required></select>
           </div>
           <div class="field">
-            <span>Question / Ã‰nigme</span>
+            <span>Question / Énigme</span>
             <input type="text" name="question" required>
           </div>
           <div class="field">
-            <span>RÃ©ponse attendue</span>
+            <span>Réponse attendue</span>
             <input type="text" name="answer" required>
           </div>
           <div class="field">
             <span>Programmer l'envoi (optionnel)</span>
             <input type="datetime-local" name="send_at">
           </div>
-          <button type="submit" class="auth-button">Enregistrer l'Ã©nigme</button>
+          <button type="submit" class="auth-button">Enregistrer l'énigme</button>
         </form>
         <div class="auth-feedback" data-riddle-feedback></div>
       </div>
 
       <div class="panel panel-wide">
-        <h2>ðŸ‘¥ Profils Candidats</h2>
+        <h2>👥 Profils Candidats</h2>
         <div class="table-wrap">
           <table class="data-table">
             <thead>
               <tr>
-                <th>Nom</th><th>PrÃ©nom</th><th>Email</th><th>TÃ©lÃ©phone</th><th>Source</th><th>Mot de passe</th><th>Actions</th>
+                <th>Nom</th><th>Prénom</th><th>Email</th><th>Téléphone</th><th>Source</th><th>Mot de passe</th><th>Actions</th>
               </tr>
             </thead>
             <tbody data-participant-list></tbody>
@@ -118,27 +118,27 @@
       </div>
 
       <div class="panel panel-wide">
-        <h2>ðŸ”— BinÃ´mes Actifs</h2>
+        <h2>🔗 Binômes Actifs</h2>
         <div class="table-wrap">
           <table class="data-table">
-            <thead><tr><th>Participant A</th><th>Participant B</th><th>ThÃ¨me</th><th>Date</th></tr></thead>
+            <thead><tr><th>Participant A</th><th>Participant B</th><th>Thème</th><th>Date</th></tr></thead>
             <tbody data-pairing-list></tbody>
           </table>
         </div>
       </div>
 
       <div class="panel panel-wide">
-        <h2>ðŸ§© Ã‰nigmes envoyÃ©es</h2>
+        <h2>🧩 Énigmes envoyées</h2>
         <div class="table-wrap">
           <table class="data-table">
-            <thead><tr><th>Profil</th><th>Question</th><th>Statut</th><th>DerniÃ¨re rÃ©ponse</th><th>RÃ©sultat</th><th>Temps</th></tr></thead>
+            <thead><tr><th>Profil</th><th>Question</th><th>Statut</th><th>Dernière réponse</th><th>Résultat</th><th>Temps</th></tr></thead>
             <tbody data-riddle-list></tbody>
           </table>
         </div>
       </div>
 
       <div class="panel panel-wide">
-        <h2>ðŸ›Žï¸ Notifications</h2>
+        <h2>🛎️ Notifications</h2>
         <div class="table-wrap">
           <table class="data-table">
             <thead><tr><th>Titre</th><th>Participant</th><th>Message</th><th>Date</th></tr></thead>
